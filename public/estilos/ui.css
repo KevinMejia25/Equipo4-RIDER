@@ -1,0 +1,485 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   HOJA DE ESTILOS DEL CURSO
+   Programación de Aplicaciones Web Progresivas
+
+   Esta hoja trae todos los componentes que necesita el proyecto.
+   No tienes que escribir CSS: arma tus pantallas combinando estas clases.
+
+   Cómo usarla:
+     <link rel="stylesheet" href="/estilos/ui.css">
+
+   Si necesitas cambiar los colores de tu aplicación, cambia únicamente
+   las variables de la sección 1. Todo lo demás se ajusta solo.
+
+   Abre galeria.html para ver cada componente y copiar su HTML.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══ 1 · VARIABLES ═════════════════════════════════════════════════
+   Estos son los "tokens" de diseño. Son los únicos valores que
+   deberías tocar. Úsalos también en tu archivo de Figma para que el
+   diseño y el código coincidan.                                      */
+
+:root {
+  /* Color de marca */
+  --color-marca:        #6366F1;
+  --color-marca-oscuro: #4F46E5;
+  --color-marca-suave:  #1E1B4B;
+ 
+  /* Texto */
+  --color-texto:        #E6ECEC;
+  --color-texto-suave:  #94A3B8;
+  --color-texto-tenue:  #64748B;
+ 
+  /* Superficies */
+  --color-fondo:        #080F14;
+  --color-superficie:   #161822;
+  --color-borde:        #222833;
+  --color-borde-fuerte: #334155;
+ 
+  /* Estados del sistema */
+  --color-exito:        #10B981;
+  --color-exito-suave:  #0B2E25;
+  --color-aviso:        #F59E0B;
+  --color-aviso-suave:  #33270D;
+  --color-error:        #EF4444;
+  --color-error-suave:  #3A1717;
+  --color-info:         #3B82F6;
+  --color-info-suave:   #10243A;
+ 
+  /* Espaciado — escala de 4 px */
+  --e-1: 4px;   --e-2: 8px;   --e-3: 12px;  --e-4: 16px;
+  --e-5: 24px;  --e-6: 32px;  --e-7: 48px;  --e-8: 64px;
+ 
+  /* Tipografía */
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+  --t-xs: 0.75rem;  --t-sm: 0.875rem;  --t-base: 1rem;
+  --t-lg: 1.125rem; --t-xl: 1.375rem;  --t-2xl: 1.75rem;
+ 
+  /* Formas y sombras */
+  --radio:      8px;
+  --radio-sm:   6px;
+  --radio-full: 999px;
+  --sombra:     0 1px 2px rgba(0, 0, 0, .25),
+                0 4px 12px rgba(0, 0, 0, .25);
+  --sombra-alta:0 8px 28px rgba(0, 0, 0, .45);
+ 
+  /* Altura mínima de cualquier control táctil */
+  --alto-control: 44px;
+}
+
+/* ═══ 2 · BASE ══════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: var(--t-base);
+  line-height: 1.55;
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  /* Respeta el área segura en teléfonos con muesca */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1, h2, h3 { margin: 0 0 var(--e-3); line-height: 1.25; font-weight: 700; }
+h1 { font-size: var(--t-2xl); }
+h2 { font-size: var(--t-xl); }
+h3 { font-size: var(--t-lg); }
+p  { margin: 0 0 var(--e-3); }
+
+a { color: var(--color-marca); text-underline-offset: 2px; }
+
+/* El foco SIEMPRE debe verse: es requisito de accesibilidad y lo
+   revisa Lighthouse. No lo quites. */
+:focus-visible {
+  outline: 3px solid var(--color-marca);
+  outline-offset: 2px;
+  border-radius: var(--radio-sm);
+}
+
+/* Respeta a quien pidió menos animación en su sistema */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Visible solo para lectores de pantalla */
+.solo-lectores {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+
+/* ═══ 3 · ESTRUCTURA DE PÁGINA ══════════════════════════════════════ */
+
+.app { min-height: 100dvh; display: flex; flex-direction: column; }
+
+.contenedor {
+  width: 100%; max-width: 1100px;
+  margin: 0 auto; padding: var(--e-5) var(--e-4);
+  flex: 1;
+}
+
+/* Barra superior.
+   En teléfono el título se recorta con puntos suspensivos antes que
+   desbordar la pantalla, y si aun así no cabe, las acciones bajan a
+   una segunda línea. */
+.barra {
+  display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap;
+  padding: var(--e-3) var(--e-4);
+  background: var(--color-marca); color: #fff;
+  padding-top: calc(var(--e-3) + env(safe-area-inset-top));
+}
+.barra__titulo {
+  font-size: var(--t-lg); font-weight: 700; margin: 0;
+  min-width: 0; flex: 1 1 auto;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.barra__acciones {
+  margin-left: auto; display: flex; align-items: center;
+  gap: var(--e-2); flex: 0 0 auto;
+}
+
+/* Navegación por pestañas */
+.pestanas {
+  display: flex; gap: var(--e-1); overflow-x: auto;
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+  padding: 0 var(--e-4);
+}
+.pestana {
+  font: inherit; font-size: var(--t-sm); cursor: pointer;
+  padding: var(--e-3) var(--e-4); min-height: var(--alto-control);
+  background: none; border: 0; border-bottom: 3px solid transparent;
+  color: var(--color-texto-suave); white-space: nowrap;
+}
+.pestana:hover { color: var(--color-texto); }
+.pestana[aria-selected="true"] {
+  color: var(--color-marca); border-bottom-color: var(--color-marca); font-weight: 600;
+}
+
+/* Encabezado de sección con acción a la derecha */
+.encabezado {
+  display: flex; align-items: center; gap: var(--e-3);
+  margin-bottom: var(--e-4); flex-wrap: wrap;
+}
+.encabezado h2 { margin: 0; }
+.encabezado > .btn { margin-left: auto; }
+
+/* Rejilla para tarjetas */
+.rejilla {
+  display: grid; gap: var(--e-3);
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+
+/* ═══ 4 · BOTONES ═══════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--e-2);
+  font: inherit; font-size: var(--t-sm); font-weight: 600;
+  min-height: var(--alto-control); padding: 0 var(--e-4);
+  border: 1px solid transparent; border-radius: var(--radio);
+  background: var(--color-marca); color: #fff;
+  cursor: pointer; text-decoration: none;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.btn:hover { background: var(--color-marca-oscuro); }
+
+.btn--secundario {
+  background: var(--color-superficie);
+  color: var(--color-marca);
+  border-color: var(--color-borde-fuerte);
+}
+.btn--secundario:hover { background: var(--color-marca-suave); }
+
+.btn--fantasma {
+  background: transparent; color: var(--color-marca); border-color: transparent;
+}
+.btn--fantasma:hover { background: var(--color-marca-suave); }
+
+.btn--peligro { background: var(--color-error); }
+.btn--peligro:hover { background: #8f1c13; }
+
+.btn--bloque { width: 100%; }
+.btn--pequeno { min-height: 34px; padding: 0 var(--e-3); font-size: var(--t-xs); }
+
+.btn:disabled, .btn[aria-disabled="true"] {
+  background: var(--color-borde); color: var(--color-texto-tenue);
+  border-color: transparent; cursor: not-allowed;
+}
+
+/* Grupo de botones alineados */
+.acciones { display: flex; gap: var(--e-2); flex-wrap: wrap; }
+.acciones--fin { justify-content: flex-end; }
+
+
+/* ═══ 5 · FORMULARIOS ═══════════════════════════════════════════════ */
+
+.campo { display: block; margin-bottom: var(--e-4); }
+
+.campo__etiqueta {
+  display: block; font-size: var(--t-sm); font-weight: 600;
+  margin-bottom: var(--e-1); color: var(--color-texto);
+}
+.campo__etiqueta .requerido { color: var(--color-error); }
+
+.campo__control {
+  width: 100%; font: inherit; font-size: var(--t-base);
+  min-height: var(--alto-control); padding: var(--e-2) var(--e-3);
+  color: var(--color-texto); background: var(--color-superficie);
+  border: 1px solid var(--color-borde-fuerte); border-radius: var(--radio);
+}
+.campo__control::placeholder { color: var(--color-texto-tenue); }
+textarea.campo__control { min-height: 96px; resize: vertical; }
+select.campo__control { cursor: pointer; }
+
+.campo__ayuda {
+  display: block; font-size: var(--t-xs);
+  color: var(--color-texto-suave); margin-top: var(--e-1);
+}
+
+/* Campo con error. El mensaje va SIEMPRE en texto:
+   marcarlo solo con color rojo no es accesible. */
+.campo--error .campo__control { border-color: var(--color-error); }
+.campo__error {
+  display: block; font-size: var(--t-xs); font-weight: 600;
+  color: var(--color-error); margin-top: var(--e-1);
+}
+
+/* Casillas y opciones */
+.opcion {
+  display: flex; align-items: center; gap: var(--e-2);
+  min-height: var(--alto-control); cursor: pointer; font-size: var(--t-sm);
+}
+.opcion input { width: 18px; height: 18px; accent-color: var(--color-marca); }
+
+/* Formulario en dos columnas a partir de tableta */
+.formulario__fila { display: grid; gap: var(--e-3); }
+@media (min-width: 640px) {
+  .formulario__fila { grid-template-columns: 1fr 1fr; }
+}
+
+
+/* ═══ 6 · TARJETAS ══════════════════════════════════════════════════ */
+
+.tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: var(--e-4);
+  box-shadow: var(--sombra);
+}
+.tarjeta__titulo { font-size: var(--t-base); font-weight: 700; margin: 0 0 var(--e-1); }
+.tarjeta__texto  { font-size: var(--t-sm); color: var(--color-texto-suave); margin: 0 0 var(--e-3); }
+.tarjeta__pie    { display: flex; align-items: center; gap: var(--e-2);
+                   margin-top: var(--e-3); padding-top: var(--e-3);
+                   border-top: 1px solid var(--color-borde); }
+
+
+/* ═══ 7 · TABLAS ════════════════════════════════════════════════════ */
+
+/* Envuelve la tabla en .tabla-scroll para que no rompa el diseño
+   en teléfono: la tabla se desplaza sola en horizontal. */
+.tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.tabla {
+  width: 100%; border-collapse: collapse;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio); overflow: hidden;
+  font-size: var(--t-sm);
+}
+.tabla th, .tabla td {
+  padding: var(--e-3); text-align: left;
+  border-bottom: 1px solid var(--color-borde);
+}
+.tabla th {
+  background: var(--color-marca-suave); color: var(--color-marca-oscuro);
+  font-weight: 600; font-size: var(--t-xs);
+  text-transform: uppercase; letter-spacing: .04em;
+  white-space: nowrap;
+}
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover { background: var(--color-fondo); }
+.tabla .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+
+/* ═══ 8 · ETIQUETAS DE ESTADO ═══════════════════════════════════════
+   Para el flujo de estados de tu entidad principal.
+   Cambia los nombres de las clases por los estados de tu proyecto.   */
+
+.etiqueta {
+  display: inline-flex; align-items: center; gap: var(--e-1);
+  padding: 2px var(--e-2); border-radius: var(--radio-full);
+  font-size: var(--t-xs); font-weight: 600; white-space: nowrap;
+  background: var(--color-borde); color: var(--color-texto-suave);
+}
+.etiqueta--pendiente  { background: var(--color-aviso-suave); color: var(--color-aviso); }
+.etiqueta--proceso    { background: var(--color-info-suave);  color: var(--color-info); }
+.etiqueta--completado { background: var(--color-exito-suave); color: var(--color-exito); }
+.etiqueta--cancelado  { background: var(--color-error-suave); color: var(--color-error); }
+
+/* Punto de color al inicio de la etiqueta.
+   El color NUNCA es la única señal: el texto siempre dice el estado. */
+.etiqueta::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; flex: none;
+}
+
+
+/* ═══ 9 · AVISOS ════════════════════════════════════════════════════ */
+
+.aviso {
+  display: flex; gap: var(--e-3);
+  padding: var(--e-3) var(--e-4); border-radius: var(--radio);
+  font-size: var(--t-sm); margin-bottom: var(--e-4);
+}
+.aviso--info    { background: var(--color-info-suave);  color: var(--color-info); }
+.aviso--exito   { background: var(--color-exito-suave); color: var(--color-exito); }
+.aviso--aviso   { background: var(--color-aviso-suave); color: var(--color-aviso); }
+.aviso--error   { background: var(--color-error-suave); color: var(--color-error); }
+.aviso strong { display: block; }
+
+
+/* ═══ 10 · LOS TRES ESTADOS DE PANTALLA ═════════════════════════════
+   Toda pantalla que carga datos necesita los tres. Es requisito
+   del proyecto y es lo que separa un diseño usable de un mockup.    */
+
+/* — Cargando: esqueletos, no un texto de "espere" — */
+.esqueleto {
+  background: linear-gradient(90deg,
+              var(--color-borde) 25%, #e9efec 50%, var(--color-borde) 75%);
+  background-size: 200% 100%;
+  animation: brillo 1.4s ease-in-out infinite;
+  border-radius: var(--radio-sm);
+}
+@keyframes brillo { to { background-position: -200% 0; } }
+.esqueleto--linea   { height: 14px; margin-bottom: var(--e-2); }
+.esqueleto--titulo  { height: 20px; width: 55%; margin-bottom: var(--e-3); }
+.esqueleto--tarjeta { height: 118px; }
+
+/* — Vacío: dice qué pasó y qué hacer — */
+.estado-vacio {
+  text-align: center; padding: var(--e-7) var(--e-4);
+  background: var(--color-superficie);
+  border: 1px dashed var(--color-borde-fuerte);
+  border-radius: var(--radio);
+}
+.estado-vacio__icono { font-size: 2.2rem; line-height: 1; margin-bottom: var(--e-3); }
+.estado-vacio__titulo { font-size: var(--t-lg); font-weight: 700; margin: 0 0 var(--e-1); }
+.estado-vacio__texto  { color: var(--color-texto-suave); font-size: var(--t-sm);
+                        margin: 0 auto var(--e-4); max-width: 42ch; }
+
+/* — Error: explica y ofrece salida — */
+.estado-error {
+  text-align: center; padding: var(--e-6) var(--e-4);
+  background: var(--color-error-suave);
+  border-radius: var(--radio);
+}
+.estado-error__titulo { color: var(--color-error); font-weight: 700;
+                        font-size: var(--t-lg); margin: 0 0 var(--e-1); }
+.estado-error__texto  { color: var(--color-texto-suave); font-size: var(--t-sm);
+                        margin: 0 auto var(--e-4); max-width: 46ch; }
+
+
+/* ═══ 11 · CONECTIVIDAD Y SINCRONIZACIÓN ════════════════════════════
+   Para la parte PWA: el usuario debe saber siempre si está viendo
+   datos frescos o guardados, y si tiene cosas por enviar.           */
+
+.franja-offline {
+  display: none;
+  padding: var(--e-2) var(--e-4);
+  background: var(--color-aviso); color: #fff;
+  font-size: var(--t-sm); font-weight: 600; text-align: center;
+}
+/* Pon la clase "sin-conexion" en <body> para mostrarla */
+body.sin-conexion .franja-offline { display: block; }
+body.sin-conexion .barra { background: #4b5563; }
+
+.chip-pendientes {
+  display: inline-flex; align-items: center; gap: var(--e-1);
+  padding: 3px var(--e-2); border-radius: var(--radio-full);
+  background: rgba(255,255,255,.22); color: #fff;
+  font-size: var(--t-xs); font-weight: 600;
+}
+
+
+/* ═══ 12 · DIÁLOGO ══════════════════════════════════════════════════
+   Usa el elemento <dialog> nativo: te da el foco y la tecla Escape
+   gratis, sin JavaScript extra.                                     */
+
+dialog.dialogo {
+  width: min(92vw, 460px); padding: 0;
+  border: 0; border-radius: var(--radio);
+  box-shadow: var(--sombra-alta); color: var(--color-texto);
+}
+dialog.dialogo::backdrop { background: rgba(10, 25, 19, .55); }
+.dialogo__cuerpo { padding: var(--e-5); }
+.dialogo__titulo { margin: 0 0 var(--e-2); font-size: var(--t-lg); }
+.dialogo__texto  { color: var(--color-texto-suave); font-size: var(--t-sm); margin: 0 0 var(--e-5); }
+.dialogo__pie    { display: flex; gap: var(--e-2); justify-content: flex-end; }
+
+
+/* ═══ 13 · RESPONSIVO ═══════════════════════════════════════════════
+   Los puntos de quiebre del curso. Diseña primero para teléfono:
+   lo que escribas fuera de un @media aplica al tamaño más chico.
+
+     teléfono     hasta 639 px   (por omisión)
+     tableta      desde 640 px
+     escritorio   desde 1024 px
+
+   Lo que YA se adapta solo:
+     .rejilla            reacomoda las tarjetas según quepan
+     .formulario__fila   una columna en teléfono, dos desde tableta
+     .tabla-scroll       la tabla se desplaza en horizontal
+     .pestanas           la barra de pestañas se desplaza
+     .contenedor         se centra y limita su ancho
+
+   Lo que decides TÚ en cada pantalla: cuántas columnas usar, qué
+   ocultar en teléfono, y si tu tabla se desplaza o se convierte en
+   tarjetas.                                                          */
+
+/* Columnas que colapsan a una sola en teléfono */
+.cols { display: grid; gap: var(--e-3); }
+@media (min-width: 640px)  { .cols--2 { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 640px)  { .cols--3 { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .cols--3 { grid-template-columns: repeat(3, 1fr); } }
+
+/* Barra lateral que se va abajo en teléfono */
+.con-lateral { display: grid; gap: var(--e-4); }
+@media (min-width: 1024px) { .con-lateral { grid-template-columns: 1fr 300px; align-items: start; } }
+
+/* Mostrar u ocultar según el tamaño.
+   Úsalas con moderación: si una acción no cabe en teléfono, casi
+   siempre es mejor moverla que esconderla. */
+@media (max-width: 639px)  { .oculto-movil      { display: none !important; } }
+@media (min-width: 640px)  { .oculto-escritorio { display: none !important; } }
+
+/* En teléfono, los botones de un grupo ocupan todo el ancho */
+@media (max-width: 639px) {
+  .acciones--apilar { flex-direction: column; align-items: stretch; }
+  .acciones--apilar .btn { width: 100%; }
+}
+
+
+/* ═══ 14 · UTILIDADES ═══════════════════════════════════════════════ */
+
+.pila     { display: flex; flex-direction: column; gap: var(--e-3); }
+.fila     { display: flex; align-items: center; gap: var(--e-3); flex-wrap: wrap; }
+.entre    { justify-content: space-between; }
+.empujar  { margin-left: auto; }
+.centrado { text-align: center; }
+.tenue    { color: var(--color-texto-suave); }
+.pequeno  { font-size: var(--t-sm); }
+.mono     { font-family: var(--fuente-mono); font-size: var(--t-sm); }
+.oculto   { display: none !important; }
+
+.mt-0 { margin-top: 0; }      .mb-0 { margin-bottom: 0; }
+.mt-3 { margin-top: var(--e-3); }  .mb-3 { margin-bottom: var(--e-3); }
+.mt-5 { margin-top: var(--e-5); }  .mb-5 { margin-bottom: var(--e-5); }
