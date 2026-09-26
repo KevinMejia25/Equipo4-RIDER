@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Eventos</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+<body>
+
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+    <div class="barra__acciones">
+      <span class="pequeno tenue" style="margin-right: var(--e-3)">Coordinador</span>
+      <a class="btn btn--pequeno btn--secundario" href="login.html">Salir</a>
+    </div>
+  </header>
+
+  <!-- Pestañas de navegación -->
+  <!-- Nombres de archivo acordados con el equipo: index.html (Inicio),
+       inventario.html (Andrés), eventos.html (Kevin), clientes.html y
+       cuadrilla.html (Joseph). -->
+  <nav class="pestanas" role="tablist">
+    <a class="pestana" role="tab" aria-selected="false" href="index.html">Inicio</a>
+    <a class="pestana" role="tab" aria-selected="false" href="inventario.html">Inventario</a>
+    <a class="pestana" role="tab" aria-selected="true" href="eventos.html">Eventos</a>
+    <a class="pestana" role="tab" aria-selected="false" href="clientes.html">Clientes</a>
+    <a class="pestana" role="tab" aria-selected="false" href="cuadrilla.html">Cuadrilla</a>
+  </nav>
+
+  <main class="contenedor" style="padding-top: var(--e-5); padding-bottom: var(--e-6)">
+
+    <!-- ═══ Encabezado con acción principal ═══ -->
+    <div class="encabezado">
+      <h2>Eventos</h2>
+      <button class="btn" id="btn-nuevo-evento">+ Nuevo evento</button>
+    </div>
+
+    <!-- ═══ Buscador ═══ -->
+    <div class="fila mb-3">
+      <input
+        class="campo__control"
+        style="max-width: 340px"
+        type="search"
+        id="buscar-evento"
+        placeholder="Buscar por evento, cliente o sede…"
+        aria-label="Buscar eventos"
+      >
+      <span class="pequeno tenue" id="contador-resultados">6 resultados</span>
+    </div>
+
+    <!-- ═══ ESTADO: cargando ═══ -->
+    <!-- Muéstralo mientras esperas la respuesta de Supabase; oculto por defecto -->
+    <div class="muestra oculto" id="estado-cargando">
+      <div class="esqueleto esqueleto--titulo"></div>
+      <div class="esqueleto esqueleto--linea"></div>
+      <div class="esqueleto esqueleto--linea" style="width:80%"></div>
+      <div class="rejilla mt-3">
+        <div class="esqueleto esqueleto--tarjeta"></div>
+        <div class="esqueleto esqueleto--tarjeta"></div>
+      </div>
+    </div>
+
+    <!-- ═══ ESTADO: vacío ═══ -->
+    <!-- Muéstralo si la consulta regresa 0 eventos; oculto por defecto -->
+    <div class="estado-vacio oculto" id="estado-vacio">
+      <div class="estado-vacio__icono" aria-hidden="true">📅</div>
+      <p class="estado-vacio__titulo">Todavía no hay eventos</p>
+      <p class="estado-vacio__texto">
+        Cuando registres el primero, aparecerá aquí con su cliente, sede y fechas.
+      </p>
+      <button class="btn">+ Crear primer evento</button>
+    </div>
+
+    <!-- ═══ ESTADO: error ═══ -->
+    <!-- Muéstralo si falla el fetch a Supabase; oculto por defecto -->
+    <div class="estado-error oculto" id="estado-error">
+      <p class="estado-error__titulo">No pudimos cargar los eventos</p>
+      <p class="estado-error__texto">
+        Revisa tu conexión e inténtalo de nuevo. Si el problema sigue, el servicio
+        podría estar caído.
+      </p>
+      <button class="btn btn--secundario" id="btn-reintentar">Reintentar</button>
+    </div>
+
+    <!-- ═══ ESTADO: con datos ═══ -->
+    <!-- El que se ve por defecto en esta maqueta; en producción, tbody se llena por JS -->
+    <div class="tabla-scroll" id="estado-con-datos">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Evento</th>
+            <th>Cliente</th>
+            <th>Montaje</th>
+            <th>Fin</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-eventos-body">
+          <tr>
+            <td>Boda Fernández Ruiz</td>
+            <td>Familia Fernández</td>
+            <td>10 oct 14:00</td>
+            <td>11 oct 02:00</td>
+            <td><span class="etiqueta etiqueta--completado">Confirmado</span></td>
+          </tr>
+          <tr>
+            <td>Conferencia Anual TechNay</td>
+            <td>TechNay Corporativo</td>
+            <td>10 oct 20:00</td>
+            <td>11 oct 20:00</td>
+            <td><span class="etiqueta etiqueta--pendiente">Cotizado</span></td>
+          </tr>
+          <tr>
+            <td>Festival Gastronómico</td>
+            <td>Ayto. San Pancho</td>
+            <td>11 oct 15:00</td>
+            <td>12 oct 23:00</td>
+            <td><span class="etiqueta etiqueta--pendiente">Cotizado</span></td>
+          </tr>
+          <tr>
+            <td>Expo Náutica Vallarta</td>
+            <td>TechNay Corporativo</td>
+            <td>18 oct 09:00</td>
+            <td>19 oct 21:00</td>
+            <td><span class="etiqueta etiqueta--proceso">En montaje</span></td>
+          </tr>
+          <tr>
+            <td>Informe de Gobierno</td>
+            <td>Ayto. San Pancho</td>
+            <td>22 oct 08:00</td>
+            <td>22 oct 19:00</td>
+            <td><span class="etiqueta etiqueta--proceso">Cerrado</span></td>
+          </tr>
+          <tr>
+            <td>Posada TechNay</td>
+            <td>TechNay Corporativo</td>
+            <td>05 nov 16:00</td>
+            <td>06 nov 01:00</td>
+            <td><span class="etiqueta etiqueta--cancelado">Cancelado</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!--
+    Nota de mapeo de etiquetas (solo 4 colores disponibles en ui.css
+    para 5 estados del evento):
+      cotizado    → etiqueta--pendiente  (ámbar)
+      confirmado  → etiqueta--completado (verde)  [provisional]
+      en_montaje  → etiqueta--proceso    (azul)
+      cerrado     → etiqueta--proceso    (azul)    [mismo color que en_montaje, ojo]
+      cancelado   → etiqueta--cancelado  (rojo)
+    Revisen este mapeo como equipo antes de programar la lógica —
+    "confirmado" y "cerrado"/"en_montaje" quedan compitiendo por colores.
+  -->
+
+  <!-- La lógica (fetch a Supabase, toggling de estados) va en eventos.js -->
+  <script type="module" src="/eventos.js"></script>
+</body>
+</html>

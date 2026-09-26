@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Nuevo evento</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+<body>
+
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+    <div class="barra__acciones">
+      <span class="pequeno tenue" style="margin-right: var(--e-3)">Coordinador</span>
+      <a class="btn btn--pequeno btn--secundario" href="login.html">Salir</a>
+    </div>
+  </header>
+
+  <main class="contenedor" style="padding-top: var(--e-5); padding-bottom: var(--e-6); max-width: 760px">
+
+    <p class="pequeno tenue mb-2">
+      <a href="/eventos.html">‹ Volver a eventos</a>
+    </p>
+
+    <div class="encabezado" style="margin-bottom: var(--e-2)">
+      <h2>Nuevo evento</h2>
+    </div>
+    <p class="tenue mb-4">
+      El evento nace en estado <strong>Cotizado</strong>. Cotizar no aparta el equipo.
+    </p>
+
+    <form id="form-nuevo-evento" novalidate>
+
+      <div class="formulario__fila">
+        <label class="campo">
+          <span class="campo__etiqueta">Nombre del evento <span class="requerido">*</span></span>
+          <input class="campo__control" type="text" name="nombre" id="nombre" required
+                 placeholder="Ej. Boda Fernández Ruiz">
+          <span class="campo__error oculto">Este campo es obligatorio.</span>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">Cliente <span class="requerido">*</span></span>
+          <select class="campo__control" name="cliente_id" id="cliente_id" required>
+            <option value="" selected disabled>Selecciona un cliente…</option>
+            <!-- Estas opciones se llenan desde Supabase en eventos-nuevo.js -->
+          </select>
+          <span class="campo__error oculto">Selecciona un cliente.</span>
+        </label>
+      </div>
+
+      <div class="formulario__fila">
+        <label class="campo">
+          <span class="campo__etiqueta">Sede <span class="requerido">*</span></span>
+          <input class="campo__control" type="text" name="sede" id="sede" required
+                 placeholder="Ej. Hotel Buenaventura">
+          <span class="campo__error oculto">Este campo es obligatorio.</span>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">Dirección</span>
+          <input class="campo__control" type="text" name="direccion" id="direccion"
+                 placeholder="Calle, colonia, ciudad">
+        </label>
+      </div>
+
+      <div class="formulario__fila">
+        <label class="campo">
+          <span class="campo__etiqueta">Fecha y hora de montaje <span class="requerido">*</span></span>
+          <input class="campo__control" type="datetime-local" name="fecha_montaje" id="fecha_montaje" required>
+          <span class="campo__error oculto">Este campo es obligatorio.</span>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">Fecha y hora de inicio <span class="requerido">*</span></span>
+          <input class="campo__control" type="datetime-local" name="fecha_inicio" id="fecha_inicio" required>
+          <span class="campo__error oculto">Este campo es obligatorio.</span>
+        </label>
+      </div>
+
+      <div class="formulario__fila">
+        <label class="campo">
+          <span class="campo__etiqueta">Fecha y hora de fin <span class="requerido">*</span></span>
+          <input class="campo__control" type="datetime-local" name="fecha_fin" id="fecha_fin" required>
+          <span class="campo__error oculto">
+            La fecha de fin es obligatoria y debe ser posterior al inicio.
+          </span>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">Notas</span>
+          <input class="campo__control" type="text" name="notas" id="notas"
+                 placeholder="Opcional">
+        </label>
+      </div>
+
+      <!-- Aviso de error general (ej. falla de red al guardar); oculto por defecto -->
+      <div class="aviso aviso--error mt-3 oculto" id="aviso-error">
+        <span>
+          <strong>No se pudo guardar el evento.</strong>
+          <span id="aviso-error-texto">Revisa tu conexión e inténtalo de nuevo.</span>
+        </span>
+      </div>
+
+      <div class="acciones mt-4" style="justify-content: flex-end">
+        <button type="button" class="btn btn--secundario" id="btn-cancelar">Cancelar</button>
+        <button type="submit" class="btn" id="btn-guardar">Guardar evento</button>
+      </div>
+
+    </form>
+
+  </main>
+
+  <!-- La lógica (validación real, insert a Supabase, manejo de errores) va en nuevo-evento.js -->
+  <script type="module" src="/nuevo-evento.js"></script>
+</body>
+</html>
