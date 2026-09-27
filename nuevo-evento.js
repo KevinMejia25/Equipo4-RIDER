@@ -139,6 +139,12 @@ btnCancelar.addEventListener('click', () => {
   window.location.href = '/eventos.html';
 });
 
+document.getElementById('btn-salir')?.addEventListener('click', async (evento) => {
+  evento.preventDefault();
+  await supabase.auth.signOut();
+  window.location.href = '/login.html';
+});
+
 // El HTML trae estos spans con `hidden`, pero esa clase de ui.css
 // anula el atributo — los ocultamos también por JS al cargar.
 limpiarErrores();
