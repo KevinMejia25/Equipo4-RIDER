@@ -116,4 +116,10 @@ btnNuevo.addEventListener('click', () => {
   window.location.href = '/nuevo-evento.html';
 });
 
+document.getElementById('btn-salir')?.addEventListener('click', async (evento) => {
+  evento.preventDefault();
+  await supabase.auth.signOut();
+  window.location.href = '/login.html';
+});
+
 cargarEventos();

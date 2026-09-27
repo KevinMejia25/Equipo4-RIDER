@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Iniciar sesión</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+  <style>
+    body.pantalla-login {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--e-4);
+    }
+  </style>
+</head>
+<body class="pantalla-login">
+
+  <div class="tarjeta" style="max-width: 400px; width: 100%;">
+
+    <div style="text-align: center; margin-bottom: var(--e-4)">
+      <h1 style="margin: 0; font-size: var(--t-xl)">RIDER</h1>
+      <p class="pequeno tenue" style="margin-top: var(--e-1)">Producción Audiovisual</p>
+    </div>
+
+    <p class="tenue mb-4" style="text-align: center">
+      Inicia sesión con tu cuenta de la empresa.
+    </p>
+
+    <form id="form-login" novalidate>
+
+      <label class="campo">
+        <span class="campo__etiqueta">Correo <span class="requerido">*</span></span>
+        <input class="campo__control" type="email" name="correo" id="correo" required
+               placeholder="kevin@rider.example.com" autocomplete="username">
+        <span class="campo__error oculto">Escribe tu correo.</span>
+      </label>
+
+      <label class="campo">
+        <span class="campo__etiqueta">Contraseña <span class="requerido">*</span></span>
+        <input class="campo__control" type="password" name="contrasena" id="contrasena" required
+               placeholder="••••••••" autocomplete="current-password">
+        <span class="campo__error oculto">Escribe tu contraseña.</span>
+      </label>
+
+      <!-- Aviso de credenciales incorrectas o error de red; oculto por defecto -->
+      <div class="aviso aviso--error mt-3 oculto" id="aviso-error">
+        <span>
+          <strong>No se pudo iniciar sesión.</strong>
+          <span id="aviso-error-texto">Correo o contraseña incorrectos.</span>
+        </span>
+      </div>
+
+      <button type="submit" class="btn btn--bloque mt-4" id="btn-entrar">
+        Iniciar sesión
+      </button>
+
+    </form>
+
+    <p class="pequeno tenue mt-4" style="text-align: center">
+      ¿Olvidaste tu contraseña? Contacta al coordinador general.
+    </p>
+
+  </div>
+
+  <script type="module" src="/login.js"></script>
+</body>
+</html>
