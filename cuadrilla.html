@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>RIDER · Cuadrilla</title>
+
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+
+<body>
+
+  <!-- BARRA SUPERIOR -->
+  <header class="barra">
+
+    <h1 class="barra__titulo">RIDER</h1>
+
+    <div class="barra__acciones">
+
+      <span
+        class="pequeno tenue"
+        style="margin-right: var(--e-3)"
+      >
+        Coordinador
+      </span>
+
+      <a
+        class="btn btn--pequeno btn--secundario"
+        href="login.html"
+      >
+        Salir
+      </a>
+
+    </div>
+
+  </header>
+
+
+  <!-- PESTAÑAS -->
+  <nav class="pestanas" role="tablist">
+
+    <a
+      class="pestana"
+      role="tab"
+      aria-selected="false"
+      href="index.html"
+    >
+      Inicio
+    </a>
+
+    <a
+      class="pestana"
+      role="tab"
+      aria-selected="false"
+      href="inventario.html"
+    >
+      Inventario
+    </a>
+
+    <a
+      class="pestana"
+      role="tab"
+      aria-selected="false"
+      href="eventos.html"
+    >
+      Eventos
+    </a>
+
+    <a
+      class="pestana"
+      role="tab"
+      aria-selected="false"
+      href="clientes.html"
+    >
+      Clientes
+    </a>
+
+    <a
+      class="pestana"
+      role="tab"
+      aria-selected="true"
+      href="cuadrilla.html"
+    >
+      Cuadrilla
+    </a>
+
+  </nav>
+
+
+  <!-- CONTENIDO -->
+  <main
+    class="contenedor"
+    style="padding-top: var(--e-5); padding-bottom: var(--e-6)"
+  >
+
+    <!-- ENCABEZADO -->
+    <div class="encabezado">
+
+      <div>
+
+        <h2>Cuadrilla</h2>
+
+        <p class="pequeno tenue">
+          Consulta y administra los técnicos registrados.
+        </p>
+
+      </div>
+
+      <button
+        class="btn"
+        id="btn-nuevo-tecnico"
+      >
+        + Nuevo técnico
+      </button>
+
+    </div>
+
+
+    <!-- BUSCADOR -->
+    <div class="fila mb-3">
+
+      <input
+        class="campo__control"
+        style="max-width: 340px"
+        type="search"
+        id="buscar-tecnico"
+        placeholder="Buscar por nombre, correo o teléfono…"
+        aria-label="Buscar técnicos"
+      >
+
+      <span
+        class="pequeno tenue"
+        id="contador-resultados"
+      >
+        0 resultados
+      </span>
+
+    </div>
+
+
+    <!-- ESTADO: CARGANDO -->
+    <div
+      class="muestra oculto"
+      id="estado-cargando"
+    >
+
+      <div class="esqueleto esqueleto--titulo"></div>
+
+      <div class="esqueleto esqueleto--linea"></div>
+
+      <div
+        class="esqueleto esqueleto--linea"
+        style="width:80%"
+      ></div>
+
+      <div class="rejilla mt-3">
+
+        <div class="esqueleto esqueleto--tarjeta"></div>
+
+        <div class="esqueleto esqueleto--tarjeta"></div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ESTADO: VACÍO -->
+    <div
+      class="estado-vacio oculto"
+      id="estado-vacio"
+    >
+
+      <div
+        class="estado-vacio__icono"
+        aria-hidden="true"
+      >
+        👷
+      </div>
+
+      <p class="estado-vacio__titulo">
+        Todavía no hay técnicos
+      </p>
+
+      <p class="estado-vacio__texto">
+        Cuando registres el primero, aparecerá aquí con su información.
+      </p>
+
+      <button
+        class="btn"
+        id="btn-primer-tecnico"
+      >
+        + Crear primer técnico
+      </button>
+
+    </div>
+
+
+    <!-- ESTADO: ERROR -->
+    <div
+      class="estado-error oculto"
+      id="estado-error"
+    >
+
+      <p class="estado-error__titulo">
+        No pudimos cargar los técnicos
+      </p>
+
+      <p class="estado-error__texto">
+        Revisa tu conexión e inténtalo de nuevo.
+      </p>
+
+      <button
+        class="btn btn--secundario"
+        id="btn-reintentar"
+      >
+        Reintentar
+      </button>
+
+    </div>
+
+
+    <!-- ESTADO: CON DATOS -->
+    <div
+      class="tabla-scroll"
+      id="estado-con-datos"
+    >
+
+      <table class="tabla">
+
+        <thead>
+
+          <tr>
+
+            <th>Nombre</th>
+
+            <th>Correo</th>
+
+            <th>Rol</th>
+
+            <th>Teléfono</th>
+
+            <th>Estado</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody id="tabla-tecnicos-body">
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="/cuadrilla.js"
+  ></script>
+
+</body>
+
+</html>
