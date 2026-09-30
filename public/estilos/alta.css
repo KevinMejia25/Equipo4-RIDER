@@ -1,0 +1,54 @@
+/* =========================================================
+   ESTADO DEL REGISTRO
+========================================================= */
+
+.alta-select-con-indicador {
+  position: relative;
+  width: 100%;
+}
+
+
+/* Bolita de estado */
+
+.alta-indicador {
+  position: absolute;
+
+  left: 16px;
+  top: 50%;
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: #10b981;
+
+  transform: translateY(-50%);
+
+  z-index: 2;
+
+  pointer-events: none;
+}
+
+
+/* Espacio para que el texto no se pegue a la bolita */
+
+.alta-select-con-indicador .campo__control {
+  padding-left: 38px !important;
+}
+
+
+/* Estado activo */
+
+.alta-select-con-indicador.activo
+.alta-indicador {
+  background: #10b981;
+}
+
+
+/* Estado inactivo */
+
+.alta-select-con-indicador.inactivo
+.alta-indicador {
+  background: #ba1b1b;
+}
