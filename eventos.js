@@ -51,7 +51,7 @@ function renderFila(evento) {
 
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td>${evento.nombre}</td>
+    <td><a href="detalle-evento.html?id=${evento.id}">${evento.nombre}</a></td>
     <td>${nombreCliente}</td>
     <td>${formatearFecha(evento.fecha_montaje)}</td>
     <td>${formatearFecha(evento.fecha_fin)}</td>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Detalle de evento</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+<body>
+
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+    <div class="barra__acciones">
+      <span class="pequeno tenue" style="margin-right: var(--e-3)">Coordinador</span>
+      <a class="btn btn--pequeno btn--secundario" id="btn-salir" href="login.html">Salir</a>
+    </div>
+  </header>
+
+  <main class="contenedor" style="padding-top: var(--e-5); padding-bottom: var(--e-6)">
+
+    <p class="pequeno tenue mb-0"><a href="eventos.html">‹ Volver a eventos</a></p>
+    <p class="pequeno tenue mb-3">Eventos / Detalle</p>
+
+    <!-- ═══ ESTADO: cargando ═══ -->
+    <div id="estado-cargando">
+      <div class="esqueleto esqueleto--titulo"></div>
+      <div class="esqueleto esqueleto--linea"></div>
+      <div class="esqueleto esqueleto--linea" style="width:80%"></div>
+    </div>
+
+    <!-- ═══ ESTADO: error o evento no encontrado ═══ -->
+    <div class="estado-error oculto" id="estado-error">
+      <p class="estado-error__titulo" id="error-titulo">No pudimos cargar el evento</p>
+      <p class="estado-error__texto" id="error-texto">Revisa tu conexión e inténtalo de nuevo.</p>
+      <a class="btn btn--secundario" href="eventos.html">Volver a eventos</a>
+    </div>
+
+    <!-- ═══ ESTADO: con datos ═══ -->
+    <div id="estado-con-datos" class="oculto">
+
+      <!-- Título, estado y acciones según el estado (se llenan por JS) -->
+      <div class="encabezado">
+        <h2 id="evento-nombre"></h2>
+        <span class="etiqueta" id="evento-estado"></span>
+        <div class="acciones empujar" id="acciones-estado"></div>
+      </div>
+
+      <!-- Franja de datos: una sola fila en escritorio, se acomoda en teléfono -->
+      <div class="tarjeta mb-5">
+        <div class="fila" style="align-items:flex-start">
+          <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Cliente</p><p class="mb-0" id="dato-cliente"></p></div>
+          <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Sede</p><p class="mb-0" id="dato-sede"></p></div>
+          <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Montaje</p><p class="mb-0" id="dato-montaje"></p></div>
+          <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Inicio</p><p class="mb-0" id="dato-inicio"></p></div>
+          <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Fin</p><p class="mb-0" id="dato-fin"></p></div>
+          <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Contacto</p><p class="mb-0" id="dato-contacto"></p></div>
+        </div>
+      </div>
+
+      <!-- Motivo de cancelación: solo se muestra si el evento está cancelado -->
+      <div class="aviso aviso--error mb-5 oculto" id="aviso-cancelacion">
+        <span><strong>Motivo de cancelación:</strong> <span id="dato-motivo"></span></span>
+      </div>
+
+      <div class="cols cols--2">
+
+        <!-- ═══ Equipo asignado (hoja de carga, de Emiliano) ═══ -->
+        <div class="tarjeta">
+          <div class="encabezado">
+            <h3 class="tarjeta__titulo mb-0">Equipo asignado</h3>
+            <div class="fila empujar">
+              <a class="btn btn--pequeno oculto" id="enlace-hoja-carga" href="#"
+                 aria-label="Armar hoja de carga" title="Armar hoja de carga">+</a>
+              <span class="pequeno tenue" id="equipo-conteo"></span>
+            </div>
+          </div>
+          <p class="pequeno tenue oculto" id="equipo-vacio">Todavía no hay equipo asignado a este evento.</p>
+          <div class="tabla-scroll oculto" id="equipo-tabla-contenedor">
+            <table class="tabla">
+              <thead><tr><th>Clave</th><th>Equipo</th><th>Categoría</th></tr></thead>
+              <tbody id="equipo-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ Cuadrilla asignada (de Emiliano) ═══ -->
+        <div class="tarjeta">
+          <div class="encabezado">
+            <h3 class="tarjeta__titulo mb-0">Cuadrilla asignada</h3>
+            <div class="fila empujar">
+              <a class="btn btn--pequeno oculto" id="enlace-cuadrilla" href="#"
+                 aria-label="Asignar cuadrilla" title="Asignar cuadrilla">+</a>
+              <span class="pequeno tenue" id="cuadrilla-conteo"></span>
+            </div>
+          </div>
+          <p class="pequeno tenue oculto" id="cuadrilla-vacia">Todavía no hay técnicos asignados a este evento.</p>
+          <div class="tabla-scroll oculto" id="cuadrilla-tabla-contenedor">
+            <table class="tabla">
+              <thead><tr><th>Técnico</th><th>Función</th></tr></thead>
+              <tbody id="cuadrilla-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="/detalle-evento.js"></script>
+</body>
+</html>
