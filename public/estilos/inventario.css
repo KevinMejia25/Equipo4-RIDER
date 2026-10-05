@@ -1,15 +1,6 @@
 /* =========================================================
-   RIDER · INVENTARIO
-   CSS EXCLUSIVO DEL MÓDULO INVENTARIO
-
-   IMPORTANTE:
-   Este archivo NO modifica ui.css.
-========================================================= */
-
-
-/* =========================================================
-   CONTENEDOR PRINCIPAL
-========================================================= */
+   RIDER · INVENTARIO CSS EXCLUSIVO DEL MÓDULO INVENTARIO
+   ========================================================= */
 
 .inventario-contenedor {
   padding-top: 32px;
@@ -29,49 +20,11 @@
 }
 
 .inventario-icono {
-  width: 60px;
-  height: 60px;
-  min-width: 60px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 2px solid #4f8cff;
-  border-radius: 12px;
-
-  background: #211c58;
-
-  font-size: 28px;
-
-  box-shadow:
-    0 0 18px rgba(79, 140, 255, 0.22);
-}
-
-.inventario-encabezado h2 {
-  margin: 0 0 4px;
-
-  font-size: 28px;
-  line-height: 1.2;
-}
-
-.inventario-encabezado p {
-  margin: 0;
-  font-size: 15px;
-}
-
-/* =========================================================
-   IMAGEN DEL ENCABEZADO
-========================================================= */
-
-.inventario-icono {
   width: 90px;
   height: 90px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 14px;
@@ -84,6 +37,16 @@
   object-fit: contain;
 }
 
+.inventario-encabezado h2 {
+  margin: 0 0 4px;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.inventario-encabezado p {
+  margin: 0;
+  font-size: 15px;
+}
 
 /* =========================================================
    TARJETAS DE ACCESO
@@ -91,30 +54,20 @@
 
 .inventario-accesos {
   display: grid;
-
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-
   margin-bottom: 32px;
 }
 
 .inventario-card {
   min-height: 155px;
-
   display: flex;
   flex-direction: column;
-
   padding: 20px;
-
   background: #101c29;
-
   border: 1px solid #263544;
   border-radius: 10px;
-
   box-sizing: border-box;
-
   transition:
     border-color 0.2s ease,
     transform 0.2s ease,
@@ -123,9 +76,7 @@
 
 .inventario-card:hover {
   border-color: #3a4d62;
-
   transform: translateY(-2px);
-
   box-shadow:
     0 8px 22px rgba(0, 0, 0, 0.20);
 }
@@ -133,9 +84,7 @@
 .inventario-card__cabecera {
   display: flex;
   align-items: flex-start;
-
   gap: 14px;
-
   margin-bottom: 18px;
 }
 
@@ -143,42 +92,32 @@
   width: 42px;
   height: 42px;
   min-width: 42px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 50%;
-
   font-size: 18px;
   font-weight: 700;
 }
 
 .inventario-card__icono--azul {
   color: #fff;
-
   background: #6366f1;
-
   border: 1px solid #818cf8;
-
   box-shadow:
     0 0 12px rgba(99, 102, 241, 0.18);
 }
 
 .inventario-card__icono--verde {
   color: #fff;
-
   background: #10b981;
-
   box-shadow:
     0 0 12px rgba(16, 185, 129, 0.16);
 }
 
 .inventario-card__icono--rojo {
   color: #fff;
-
   background: #ef4444;
-
   box-shadow:
     0 0 12px rgba(239, 68, 68, 0.16);
 }
@@ -190,7 +129,6 @@
 
 .inventario-card p {
   margin: 0;
-
   font-size: 13px;
   line-height: 1.5;
 }
@@ -200,21 +138,17 @@
   align-self: flex-start;
 }
 
-
 /* =========================================================
    FILTROS
 ========================================================= */
 
 .inventario-filtros {
   display: grid;
-
   grid-template-columns:
     minmax(320px, 2fr)
     minmax(230px, 1fr)
     minmax(230px, 1fr);
-
   gap: 16px;
-
   margin-bottom: 18px;
 }
 
@@ -224,11 +158,8 @@
 
 .inventario-filtro__etiqueta {
   display: block;
-
   margin-bottom: 8px;
-
   color: #f1f5f9;
-
   font-size: 13px;
   font-weight: 700;
 }
@@ -237,24 +168,18 @@
 .inventario-filtro select {
   width: 100%;
   max-width: none;
-
   box-sizing: border-box;
-
   background: #101c29;
-
   border: 1px solid #273748;
-
   color: #e6ecec;
 }
 
 .inventario-filtro input:focus,
 .inventario-filtro select:focus {
   border-color: #6366f1;
-
   box-shadow:
     0 0 0 2px rgba(99, 102, 241, 0.16);
 }
-
 
 /* =========================================================
    BUSCADOR
@@ -266,16 +191,11 @@
 
 .inventario-buscador__icono {
   position: absolute;
-
   left: 18px;
   bottom: 12px;
-
   z-index: 2;
-
   font-size: 17px;
-
   color: #60a5fa;
-
   pointer-events: none;
 }
 
@@ -283,28 +203,22 @@
   padding-left: 42px;
 }
 
-
 /* =========================================================
    CONTADORES
 ========================================================= */
 
 .inventario-resumen {
   display: flex;
-
   align-items: center;
   justify-content: space-between;
-
   margin-bottom: 10px;
-
   padding: 0 2px;
 }
 
 .inventario-resumen__contador {
   color: #94a3b8;
-
   font-size: 13px;
 }
-
 
 /* =========================================================
    TABLA
@@ -312,19 +226,13 @@
 
 .inventario-tabla {
   width: 100%;
-
   background: #0c151e;
-
   border: 1px solid #293849;
-
   border-radius: 11px;
-
   overflow: hidden;
-
   box-shadow:
     0 8px 25px rgba(0, 0, 0, 0.18);
 }
-
 
 /* =========================================================
    SCROLL HORIZONTAL
@@ -332,21 +240,14 @@
 
 .inventario-tabla .tabla-scroll {
   width: 100%;
-
   overflow-x: auto;
   overflow-y: hidden;
-
   border: 0;
-
   scrollbar-width: auto;
-
   scrollbar-color:
     #64748b
     #101923;
 }
-
-
-/* Chrome / Edge / Safari */
 
 .inventario-tabla .tabla-scroll::-webkit-scrollbar {
   height: 14px;
@@ -354,15 +255,12 @@
 
 .inventario-tabla .tabla-scroll::-webkit-scrollbar-track {
   background: #101923;
-
   border-radius: 0 0 10px 10px;
 }
 
 .inventario-tabla .tabla-scroll::-webkit-scrollbar-thumb {
   background: #64748b;
-
   border-radius: 999px;
-
   border: 3px solid #101923;
 }
 
@@ -370,25 +268,18 @@
   background: #7c8da0;
 }
 
-
 /* =========================================================
    TABLA INTERNA
-   Se hace más ancha para evitar columnas apretadas.
 ========================================================= */
 
 .inventario-tabla .tabla {
   width: 100%;
-
   min-width: 1380px;
-
   margin: 0;
-
   border-collapse: separate;
   border-spacing: 0;
-
   table-layout: auto;
 }
-
 
 /* =========================================================
    ENCABEZADO DE TABLA
@@ -400,24 +291,16 @@
 
 .inventario-tabla .tabla th {
   height: 52px;
-
   padding: 0 18px;
-
   color: #f1f5f9;
-
   font-size: 12px;
   font-weight: 700;
-
   text-align: left;
   vertical-align: middle;
-
   white-space: nowrap;
-
   border: 0;
-
   letter-spacing: 0.01em;
 }
-
 
 /* =========================================================
    ANCHO DE COLUMNAS
@@ -468,14 +351,12 @@
   min-width: 130px;
 }
 
-
 /* =========================================================
    FILAS
 ========================================================= */
 
 .inventario-tabla .tabla tbody tr {
   background: #0d1720;
-
   transition:
     background 0.15s ease;
 }
@@ -488,28 +369,20 @@
   background: rgba(99, 102, 241, 0.08);
 }
 
-
 /* =========================================================
    CELDAS
 ========================================================= */
 
 .inventario-tabla .tabla td {
   height: 58px;
-
   padding: 0 18px;
-
   color: #d7dee8;
-
   font-size: 12px;
-
   text-align: left;
   vertical-align: middle;
-
   border-top: 1px solid #202d3a;
-
   white-space: nowrap;
 }
-
 
 /* =========================================================
    CLAVE
@@ -517,71 +390,45 @@
 
 .inventario-tabla .tabla td:first-child {
   color: #818cf8;
-
   font-weight: 700;
 }
 
-
 /* =========================================================
    CONDICIÓN
-   TEXTO NORMAL, SIN PASTILLA
 ========================================================= */
 
 .inventario-tabla .tabla td:nth-child(7) {
   color: #94a3b8;
-
   padding-left: 18px;
   padding-right: 18px;
 }
 
-
 /* =========================================================
    ESTADO
-   AQUÍ SÍ VAN LAS PASTILLAS
 ========================================================= */
 
 .inventario-estado {
   display: inline-flex;
-
   align-items: center;
-
   gap: 6px;
-
   padding: 5px 10px;
-
   border-radius: 999px;
-
   font-size: 11px;
-
   font-weight: 600;
-
   line-height: 1;
-
   white-space: nowrap;
 }
 
-
-/* Punto */
-
 .inventario-estado::before {
   content: "";
-
   width: 6px;
   height: 6px;
-
   flex: 0 0 6px;
-
   border-radius: 50%;
 }
 
-
-/* =========================================================
-   DISPONIBLE
-========================================================= */
-
 .inventario-estado--disponible {
   color: #10b981;
-
   background: rgba(16, 185, 129, 0.12);
 }
 
@@ -589,14 +436,8 @@
   background: #10b981;
 }
 
-
-/* =========================================================
-   EN USO
-========================================================= */
-
 .inventario-estado--uso {
   color: #f59e0b;
-
   background: rgba(245, 158, 11, 0.12);
 }
 
@@ -604,14 +445,8 @@
   background: #f59e0b;
 }
 
-
-/* =========================================================
-   MANTENIMIENTO
-========================================================= */
-
 .inventario-estado--mantenimiento {
   color: #ef4444;
-
   background: rgba(239, 68, 68, 0.12);
 }
 
@@ -619,22 +454,14 @@
   background: #ef4444;
 }
 
-
-/* =========================================================
-   NO DISPONIBLE
-========================================================= */
-
 .inventario-estado--no-disponible {
   color: #ef4444;
-
   background: rgba(239, 68, 68, 0.12);
 }
 
 .inventario-estado--no-disponible::before {
   background: #ef4444;
 }
-
-
 
 /* =========================================================
    RESPONSIVE
@@ -652,7 +479,6 @@
 
 }
 
-
 @media (max-width: 640px) {
 
   .inventario-contenedor {
@@ -666,9 +492,7 @@
   .inventario-icono {
     width: 46px;
     height: 46px;
-
     min-width: 46px;
-
     font-size: 22px;
   }
 
@@ -686,86 +510,56 @@
 
   .inventario-resumen {
     align-items: flex-start;
-
     flex-direction: column;
-
     gap: 5px;
   }
 
 }
 
-
 /* =========================================================
    ACCIONES DE LA TABLA
 ========================================================= */
 
-/* Encabezado "Acciones" */
 .inventario-tabla .tabla th:last-child {
   text-align: center;
 }
 
-/* Celda de acciones */
 .inventario-tabla .tabla td.inventario-acciones {
   text-align: center;
   vertical-align: middle;
   white-space: nowrap;
 }
 
-/* Botones de acción */
 .inventario-accion {
   width: 22px;
   height: 22px;
-
   padding: 0;
   margin: 0 7px;
-
   border: 0;
   outline: none;
-
   background: transparent;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   vertical-align: middle;
-
   cursor: pointer;
-
   color: #94a3b8;
-
   transition:
     color 0.15s ease,
     transform 0.15s ease,
     opacity 0.15s ease;
 }
 
-
-/* =========================================================
-   SVG DE LOS ÍCONOS
-========================================================= */
-
 .inventario-accion svg {
   width: 21px;
   height: 21px;
-
   display: block;
-
   fill: none;
-
-  /* IMPORTANTE:
-     Esto hace que el SVG tome el color del botón */
   stroke: currentColor;
-
   stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
-
-/* =========================================================
-   EDITAR
-========================================================= */
 
 .inventario-accion--editar {
   color: #94a3b8;
@@ -773,14 +567,8 @@
 
 .inventario-accion--editar:hover {
   color: #cbd5e1;
-
   transform: scale(1.10);
 }
-
-
-/* =========================================================
-   VER
-========================================================= */
 
 .inventario-accion--ver {
   color: #94a3b8;
@@ -788,14 +576,8 @@
 
 .inventario-accion--ver:hover {
   color: #cbd5e1;
-
   transform: scale(1.10);
 }
-
-
-/* =========================================================
-   ELIMINAR
-========================================================= */
 
 .inventario-accion--eliminar {
   color: #ff3b4b;
@@ -803,35 +585,18 @@
 
 .inventario-accion--eliminar:hover {
   color: #ff5c69;
-
   transform: scale(1.10);
 }
-
-
-/* =========================================================
-   AL HACER CLICK
-========================================================= */
 
 .inventario-accion:active {
   transform: scale(0.95);
 }
-
-
-/* =========================================================
-   BOTÓN DESHABILITADO
-   Se usa mientras se elimina un equipo
-========================================================= */
 
 .inventario-accion:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
 }
-
-
-/* =========================================================
-   QUITAR ESTILOS GENERALES DE BUTTON
-========================================================= */
 
 .inventario-accion:focus {
   outline: none;
@@ -843,17 +608,11 @@
   border-radius: 4px;
 }
 
-
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-
 @media (max-width: 640px) {
 
   .inventario-accion {
     width: 21px;
     height: 21px;
-
     margin: 0 6px;
   }
 
@@ -913,8 +672,38 @@
 
   animation:
     inventarioModalEntrada 0.18s ease-out;
+
+  /* Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #64748b transparent;
 }
 
+
+/* =========================================================
+   SCROLLBAR DEL MODAL
+========================================================= */
+
+.inventario-modal__card::-webkit-scrollbar {
+  width: 10px;
+}
+
+.inventario-modal__card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.inventario-modal__card::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 999px;
+}
+
+.inventario-modal__card::-webkit-scrollbar-thumb:hover {
+  background: #7c8da3;
+}
+
+
+/* =========================================================
+   ANIMACIÓN
+========================================================= */
 
 @keyframes inventarioModalEntrada {
 
@@ -948,7 +737,6 @@
   border-bottom: 1px solid #263544;
 }
 
-
 .inventario-modal__titulo {
   margin: 0;
 
@@ -958,7 +746,6 @@
   font-weight: 700;
 }
 
-
 .inventario-modal__subtitulo {
   margin: 5px 0 0;
 
@@ -966,7 +753,6 @@
 
   font-size: 13px;
 }
-
 
 .inventario-modal__cerrar {
   width: 34px;
@@ -983,6 +769,7 @@
   color: #94a3b8;
 
   font-size: 24px;
+
   line-height: 1;
 
   cursor: pointer;
@@ -992,9 +779,9 @@
     color 0.15s ease;
 }
 
-
 .inventario-modal__cerrar:hover {
   background: #1c2b3b;
+
   color: #f1f5f9;
 }
 
@@ -1023,7 +810,6 @@
   margin: 0;
 }
 
-
 .inventario-modal__dato {
   padding: 13px;
 
@@ -1034,11 +820,9 @@
   border-radius: 8px;
 }
 
-
 .inventario-modal__dato--completo {
   grid-column: 1 / -1;
 }
-
 
 .inventario-modal__dato dt {
   margin-bottom: 5px;
@@ -1050,7 +834,6 @@
 
   text-transform: uppercase;
 }
-
 
 .inventario-modal__dato dd {
   margin: 0;
@@ -1072,6 +855,7 @@
   height: 42px;
 
   display: flex;
+
   align-items: center;
   justify-content: center;
 
@@ -1082,21 +866,21 @@
   font-size: 20px;
 }
 
-
 .inventario-modal__icono--editar {
   color: #a5b4fc;
+
   background: rgba(99, 102, 241, 0.16);
 }
 
-
 .inventario-modal__icono--ver {
   color: #93c5fd;
+
   background: rgba(59, 130, 246, 0.16);
 }
 
-
 .inventario-modal__icono--eliminar {
   color: #ff6b75;
+
   background: rgba(239, 68, 68, 0.14);
 }
 
@@ -1114,7 +898,6 @@
 
   line-height: 1.6;
 }
-
 
 .inventario-modal__mensaje strong {
   color: #f8fafc;
@@ -1160,11 +943,9 @@
     transform 0.15s ease;
 }
 
-
 .inventario-modal__boton:hover {
   transform: translateY(-1px);
 }
-
 
 .inventario-modal__boton--cancelar {
   border: 1px solid #33475a;
@@ -1174,11 +955,9 @@
   color: #cbd5e1;
 }
 
-
 .inventario-modal__boton--cancelar:hover {
   background: #1d2d3d;
 }
-
 
 .inventario-modal__boton--principal {
   border: 1px solid #6366f1;
@@ -1188,11 +967,9 @@
   color: white;
 }
 
-
 .inventario-modal__boton--principal:hover {
   background: #5b55ee;
 }
-
 
 .inventario-modal__boton--eliminar {
   border: 1px solid #ef4444;
@@ -1202,14 +979,13 @@
   color: white;
 }
 
-
 .inventario-modal__boton--eliminar:hover {
   background: #ef4444;
 }
 
 
 /* =========================================================
-   RESPONSIVE
+   RESPONSIVE DE LOS MODALES
 ========================================================= */
 
 @media (max-width: 600px) {
@@ -1223,6 +999,212 @@
   }
 
   .inventario-modal__dato--completo {
+    grid-column: auto;
+  }
+
+  .inventario-modal__footer {
+    flex-direction: column-reverse;
+  }
+
+  .inventario-modal__boton {
+    width: 100%;
+  }
+
+}
+
+/* =========================================================
+   FORMULARIO DEL MODAL EDITAR
+   MISMO ESTILO OSCURO DEL INVENTARIO
+========================================================= */
+
+.inventario-modal__formulario {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 16px;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   CAMPOS
+========================================================= */
+
+.inventario-modal__campo {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.inventario-modal__campo--completo {
+  grid-column: 1 / -1;
+}
+
+
+/* =========================================================
+   ETIQUETAS
+========================================================= */
+
+.inventario-modal__campo label {
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.02em;
+}
+
+
+/* =========================================================
+   INPUTS Y SELECT
+========================================================= */
+
+.inventario-modal__campo input,
+.inventario-modal__campo select {
+  width: 100%;
+
+  min-height: 44px;
+
+  padding: 10px 12px;
+
+  box-sizing: border-box;
+
+  background: #0d1720;
+
+  color: #d7dee8;
+
+  border: 1px solid #293849;
+
+  border-radius: 8px;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+
+/* =========================================================
+   HOVER
+========================================================= */
+
+.inventario-modal__campo input:hover,
+.inventario-modal__campo select:hover {
+  background: #101c29;
+
+  border-color: #3a4d62;
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.inventario-modal__campo input:focus,
+.inventario-modal__campo select:focus {
+  background: #101c29;
+
+  border-color: #6366f1;
+
+  box-shadow:
+    0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+
+/* =========================================================
+   PLACEHOLDER
+========================================================= */
+
+.inventario-modal__campo input::placeholder {
+  color: #64748b;
+}
+
+
+/* =========================================================
+   SELECT
+========================================================= */
+
+.inventario-modal__campo select {
+  cursor: pointer;
+}
+
+.inventario-modal__campo select option {
+  background: #0d1720;
+
+  color: #d7dee8;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.inventario-modal__footer {
+  display: flex;
+
+  justify-content: flex-end;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+/* =========================================================
+   BOTÓN GUARDAR
+========================================================= */
+
+.inventario-modal__boton--principal {
+  border: 1px solid #6366f1;
+
+  background: #4f46e5;
+
+  color: #ffffff;
+
+  cursor: pointer;
+}
+
+.inventario-modal__boton--principal:hover {
+  background: #5b55ee;
+}
+
+
+/* =========================================================
+   BOTÓN DESHABILITADO
+========================================================= */
+
+.inventario-modal__boton:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   RESPONSIVE DEL FORMULARIO
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .inventario-modal__formulario {
+    grid-template-columns: 1fr;
+  }
+
+  .inventario-modal__campo--completo {
     grid-column: auto;
   }
 
