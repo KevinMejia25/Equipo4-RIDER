@@ -694,153 +694,479 @@ function abrirModalVer(equipo) {
    MODAL EDITAR
 ========================================================= */
 
-function abrirModalEditar(equipo) {
+async function abrirModalEditar(equipo) {
 
-  const modal =
-    crearModal();
-
+  const modal = crearModal();
 
   ponerTituloModal(
     modal,
     '✎',
     'inventario-modal__icono--editar',
     'Editar equipo',
-    'Revisa la información antes de continuar'
+    'Modifica la información directamente aquí'
   );
 
-
-  const categoria =
-    equipo.categorias?.nombre ||
-    'Sin categoría';
-
-
-  modal.querySelector(
+  const contenido = modal.querySelector(
     '#inventario-modal-contenido'
-  ).innerHTML = `
+  );
 
-    <dl class="inventario-modal__datos">
+  /* =======================================================
+     CARGAR CATEGORÍAS
+  ======================================================= */
 
-      <div class="inventario-modal__dato">
+  const {
+    data: categorias,
+    error: errorCategorias
+  } = await supabase
+    .from('categorias')
+    .select('id, nombre')
+    .order('nombre', {
+      ascending: true
+    });
 
-        <dt>Clave</dt>
+  if (errorCategorias) {
 
-        <dd>
-          ${escaparHTML(equipo.clave)}
-        </dd>
+    console.error(
+      'Error al cargar categorías:',
+      errorCategorias
+    );
+
+  }
+
+  /* =======================================================
+     OPCIONES DE CATEGORÍAS
+  ======================================================= */
+
+  let opcionesCategorias = `
+    <option value="">
+      Selecciona una categoría
+    </option>
+  `;
+
+  (categorias ?? []).forEach(
+    (categoria) => {
+
+      opcionesCategorias += `
+        <option
+          value="${escaparHTML(String(categoria.id))}"
+          ${
+            String(categoria.id) ===
+            String(equipo.categoria_id)
+              ? 'selected'
+              : ''
+          }
+        >
+          ${escaparHTML(categoria.nombre)}
+        </option>
+      `;
+
+    }
+  );
+
+  /* =======================================================
+     FORMULARIO
+  ======================================================= */
+
+  contenido.innerHTML = `
+
+    <div class="inventario-modal__formulario">
+
+      <!-- CLAVE -->
+
+      <div class="inventario-modal__campo">
+
+        <label for="editar-clave">
+          Clave
+        </label>
+
+        <input
+          id="editar-clave"
+          type="text"
+          value="${escaparHTML(equipo.clave)}"
+          autocomplete="off"
+        >
 
       </div>
 
 
-      <div class="inventario-modal__dato">
+      <!-- EQUIPO -->
 
-        <dt>Equipo</dt>
+      <div class="inventario-modal__campo">
 
-        <dd>
-          ${escaparHTML(equipo.nombre)}
-        </dd>
+        <label for="editar-nombre">
+          Equipo
+        </label>
 
-      </div>
-
-
-      <div class="inventario-modal__dato">
-
-        <dt>Categoría</dt>
-
-        <dd>
-          ${escaparHTML(categoria)}
-        </dd>
+        <input
+          id="editar-nombre"
+          type="text"
+          value="${escaparHTML(equipo.nombre)}"
+          autocomplete="off"
+        >
 
       </div>
 
 
-      <div class="inventario-modal__dato">
+      <!-- CATEGORÍA -->
 
-        <dt>Marca</dt>
+      <div class="inventario-modal__campo">
 
-        <dd>
-          ${escaparHTML(equipo.marca)}
-        </dd>
+        <label for="editar-categoria">
+          Categoría
+        </label>
+
+        <select id="editar-categoria">
+
+          ${opcionesCategorias}
+
+        </select>
+
+      </div>
+
+
+      <!-- MARCA -->
+
+      <div class="inventario-modal__campo">
+
+        <label for="editar-marca">
+          Marca
+        </label>
+
+        <input
+          id="editar-marca"
+          type="text"
+          value="${escaparHTML(equipo.marca)}"
+          autocomplete="off"
+        >
 
       </div>
 
 
-      <div class="inventario-modal__dato">
+      <!-- MODELO -->
 
-        <dt>Modelo</dt>
+      <div class="inventario-modal__campo">
 
-        <dd>
-          ${escaparHTML(equipo.modelo)}
-        </dd>
+        <label for="editar-modelo">
+          Modelo
+        </label>
+
+        <input
+          id="editar-modelo"
+          type="text"
+          value="${escaparHTML(equipo.modelo)}"
+          autocomplete="off"
+        >
 
       </div>
 
+
+      <!-- NÚMERO DE SERIE -->
 
       <div
-        class="inventario-modal__dato inventario-modal__dato--completo"
+        class="inventario-modal__campo inventario-modal__campo--completo"
       >
 
-        <dt>Núm. de serie</dt>
+        <label for="editar-numero-serie">
+          Núm. de serie
+        </label>
 
-        <dd>
-          ${escaparHTML(equipo.numero_serie)}
-        </dd>
+        <input
+          id="editar-numero-serie"
+          type="text"
+          value="${escaparHTML(equipo.numero_serie)}"
+          autocomplete="off"
+        >
 
       </div>
 
-    </dl>
+<!-- CONDICIÓN -->
+
+<div
+  class="inventario-modal__campo inventario-modal__campo--completo"
+>
+
+  <label for="editar-condicion">
+    Condición
+  </label>
+
+  <select id="editar-condicion">
+
+    <option
+      value="buen_estado"
+      ${equipo.condicion === 'buen_estado' ? 'selected' : ''}
+    >
+      Buen estado
+    </option>
+
+    <option
+      value="dañado"
+      ${equipo.condicion === 'dañado' ? 'selected' : ''}
+    >
+      Dañado
+    </option>
+
+    <option
+      value="faltante"
+      ${equipo.condicion === 'faltante' ? 'selected' : ''}
+    >
+      Faltante
+    </option>
+
+  </select>
+
+</div>
+
+      <!-- ESTADO DEL REGISTRO -->
+
+      <div
+        class="inventario-modal__campo inventario-modal__campo--completo"
+      >
+
+        <label for="editar-activo">
+          Estado del registro
+        </label>
+
+        <select id="editar-activo">
+
+          <option
+            value="true"
+            ${equipo.activo === true ? 'selected' : ''}
+          >
+            🟢 Activo
+          </option>
+
+          <option
+            value="false"
+            ${equipo.activo === false ? 'selected' : ''}
+          >
+            🔴 Inactivo
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
 
   `;
 
 
-  const footer =
-    modal.querySelector(
-      '#inventario-modal-footer'
-    );
+  /* =======================================================
+     FOOTER
+  ======================================================= */
+
+  const footer = modal.querySelector(
+    '#inventario-modal-footer'
+  );
 
 
-  const btnCancelar =
-    crearBotonModal(
-      'Cancelar',
-      'inventario-modal__boton--cancelar'
-    );
+  /* =======================================================
+     BOTÓN CANCELAR
+  ======================================================= */
 
+  const btnCerrar = crearBotonModal(
+    'Cancelar',
+    'inventario-modal__boton--cancelar'
+  );
 
-  btnCancelar.addEventListener(
+  btnCerrar.addEventListener(
     'click',
     () => cerrarModal(modal)
   );
 
 
-  const btnContinuar =
-    crearBotonModal(
-      'Editar equipo →',
-      'inventario-modal__boton--principal'
-    );
+  /* =======================================================
+     BOTÓN GUARDAR
+  ======================================================= */
+
+  const btnGuardar = crearBotonModal(
+    'Guardar cambios',
+    'inventario-modal__boton--principal'
+  );
 
 
-  btnContinuar.addEventListener(
+  btnGuardar.addEventListener(
     'click',
-    () => {
+    async () => {
 
-      window.location.href =
-        `/editar-equipo.html?id=${encodeURIComponent(
+      /* ================================================
+         OBTENER VALORES
+      ================================================ */
+
+      const clave =
+        modal
+          .querySelector('#editar-clave')
+          .value
+          .trim();
+
+      const nombre =
+        modal
+          .querySelector('#editar-nombre')
+          .value
+          .trim();
+
+      const categoriaId =
+        modal
+          .querySelector('#editar-categoria')
+          .value;
+
+      const marca =
+        modal
+          .querySelector('#editar-marca')
+          .value
+          .trim();
+
+      const modelo =
+        modal
+          .querySelector('#editar-modelo')
+          .value
+          .trim();
+
+      const numeroSerie =
+        modal
+          .querySelector('#editar-numero-serie')
+          .value
+          .trim();
+
+
+      /* ================================================
+         OBTENER CONDICIÓN
+      ================================================ */
+
+      const condicion =
+        modal
+          .querySelector('#editar-condicion')
+          .value;
+
+
+      /* ================================================
+         OBTENER ESTADO
+      ================================================ */
+
+      const activo =
+        modal
+          .querySelector('#editar-activo')
+          .value === 'true';
+
+
+      /* ================================================
+         VALIDAR
+      ================================================ */
+
+      if (
+        !clave ||
+        !nombre ||
+        !categoriaId ||
+        !marca ||
+        !modelo ||
+        !numeroSerie ||
+        !condicion
+      ) {
+
+        window.alert(
+          'Completa todos los campos antes de guardar.'
+        );
+
+        return;
+
+      }
+
+
+      /* ================================================
+         ESTADO DEL BOTÓN
+      ================================================ */
+
+      btnGuardar.disabled = true;
+
+      btnGuardar.textContent =
+        'Guardando...';
+
+
+      /* ================================================
+         ACTUALIZAR EQUIPO
+      ================================================ */
+
+      const {
+        error
+      } = await supabase
+        .from('equipos')
+        .update({
+
+          clave: clave,
+
+          nombre: nombre,
+
+          categoria_id: categoriaId,
+
+          marca: marca,
+
+          modelo: modelo,
+
+          numero_serie: numeroSerie,
+
+          condicion: condicion,
+
+          activo: activo
+
+        })
+        .eq(
+          'id',
           equipo.id
-        )}`;
+        );
+
+
+      /* ================================================
+         ERROR
+      ================================================ */
+
+      if (error) {
+
+        console.error(
+          'Error al actualizar equipo:',
+          error
+        );
+
+        window.alert(
+          'No se pudo guardar el equipo.\n\n' +
+          error.message
+        );
+
+        btnGuardar.disabled = false;
+
+        btnGuardar.textContent =
+          'Guardar cambios';
+
+        return;
+
+      }
+
+
+      /* ================================================
+         ÉXITO
+      ================================================ */
+
+      cerrarModal(modal);
+
+      await cargarEquipos();
 
     }
+
   );
 
 
+  /* =======================================================
+     AGREGAR BOTONES
+  ======================================================= */
+
   footer.appendChild(
-    btnCancelar
+    btnCerrar
   );
 
   footer.appendChild(
-    btnContinuar
+    btnGuardar
   );
 
 }
-
 
 /* =========================================================
    MODAL ELIMINAR
@@ -848,27 +1174,25 @@ function abrirModalEditar(equipo) {
 
 function abrirModalEliminar(equipo) {
 
-  const modal =
-    crearModal();
-
+  const modal = crearModal();
 
   ponerTituloModal(
     modal,
     '🗑',
     'inventario-modal__icono--eliminar',
     'Eliminar equipo',
-    'Esta acción requiere confirmación'
+    'Esta acción no se puede deshacer'
   );
 
-
-  modal.querySelector(
+  const contenido = modal.querySelector(
     '#inventario-modal-contenido'
-  ).innerHTML = `
+  );
+
+  contenido.innerHTML = `
 
     <p class="inventario-modal__mensaje">
 
-      ¿Estás seguro de que deseas eliminar
-      el equipo
+      ¿Estás seguro de que deseas eliminar el equipo
 
       <strong>
         ${escaparHTML(equipo.nombre)}
@@ -882,123 +1206,110 @@ function abrirModalEliminar(equipo) {
 
       <br><br>
 
-      Esta acción eliminará el registro del
-      inventario y no se puede deshacer.
+      El equipo será eliminado permanentemente del inventario.
 
     </p>
 
   `;
 
+  const footer = modal.querySelector(
+    '#inventario-modal-footer'
+  );
 
-  const footer =
-    modal.querySelector(
-      '#inventario-modal-footer'
-    );
+  /* =======================================================
+     BOTÓN CANCELAR
+  ======================================================= */
 
+  const btnCerrar = crearBotonModal(
+    'Cancelar',
+    'inventario-modal__boton--cancelar'
+  );
 
-  const btnCancelar =
-    crearBotonModal(
-      'Cancelar',
-      'inventario-modal__boton--cancelar'
-    );
-
-
-  btnCancelar.addEventListener(
+  btnCerrar.addEventListener(
     'click',
-    () => cerrarModal(modal)
+    () => {
+      cerrarModal(modal);
+    }
   );
 
 
-  const btnEliminar =
-    crearBotonModal(
-      'Eliminar equipo',
-      'inventario-modal__boton--eliminar'
-    );
+  /* =======================================================
+     BOTÓN ELIMINAR
+  ======================================================= */
 
+  const btnEliminar = crearBotonModal(
+    'Eliminar equipo',
+    'inventario-modal__boton--eliminar'
+  );
 
   btnEliminar.addEventListener(
     'click',
     async () => {
 
-      try {
+      btnEliminar.disabled = true;
 
-        btnEliminar.disabled =
-          true;
-
-        btnEliminar.textContent =
-          'Eliminando...';
+      btnEliminar.textContent =
+        'Eliminando...';
 
 
-        const {
-          error
-        } = await supabase
-          .from('equipos')
-          .delete()
-          .eq(
-            'id',
-            equipo.id
-          );
+      /* =====================================================
+         ELIMINAR DE SUPABASE
+      ===================================================== */
+
+      const {
+        error
+      } = await supabase
+        .from('equipos')
+        .delete()
+        .eq(
+          'id',
+          equipo.id
+        );
 
 
-        if (error) {
+      /* =====================================================
+         ERROR
+      ===================================================== */
 
-          console.error(
-            'Error al eliminar equipo:',
-            error
-          );
-
-
-          window.alert(
-            'No se pudo eliminar el equipo.\n\n' +
-            error.message
-          );
-
-
-          btnEliminar.disabled =
-            false;
-
-          btnEliminar.textContent =
-            'Eliminar equipo';
-
-          return;
-
-        }
-
-
-        cerrarModal(modal);
-
-
-        await cargarEquipos();
-
-      }
-
-      catch (error) {
+      if (error) {
 
         console.error(
-          'Error inesperado:',
+          'Error al eliminar equipo:',
           error
         );
 
-
         window.alert(
-          'Ocurrió un error al eliminar el equipo.'
+          'No se pudo eliminar el equipo.\n\n' +
+          error.message
         );
 
-
-        btnEliminar.disabled =
-          false;
+        btnEliminar.disabled = false;
 
         btnEliminar.textContent =
           'Eliminar equipo';
 
+        return;
       }
+
+
+      /* =====================================================
+         ÉXITO
+      ===================================================== */
+
+      cerrarModal(modal);
+
+      await cargarEquipos();
 
     }
   );
 
 
+  /* =======================================================
+     AGREGAR BOTONES
+  ======================================================= */
+
   footer.appendChild(
-    btnCancelar
+    btnCerrar
   );
 
   footer.appendChild(
@@ -1006,6 +1317,7 @@ function abrirModalEliminar(equipo) {
   );
 
 }
+
 
 
 /* =========================================================
