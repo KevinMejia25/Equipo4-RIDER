@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>RIDER · Hoja de carga</title>
+
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+
+<body>
+
+  <header class="barra">
+
+    <h1 class="barra__titulo">
+      RIDER
+    </h1>
+
+    <div class="barra__acciones">
+
+      <span
+        class="pequeno tenue"
+        style="margin-right: var(--e-3)"
+      >
+        Coordinador
+      </span>
+
+      <a
+        class="btn btn--pequeno btn--secundario"
+        id="btn-salir"
+        href="login.html"
+      >
+        Salir
+      </a>
+
+    </div>
+
+  </header>
+
+
+  <main
+    class="contenedor"
+    style="
+      padding-top: var(--e-5);
+      padding-bottom: var(--e-6);
+    "
+  >
+
+    <p class="pequeno tenue mb-0">
+
+      <a id="volver-evento" href="eventos.html">
+        ‹ Volver al evento
+      </a>
+
+    </p>
+
+    <p class="pequeno tenue mb-3">
+      Eventos / Hoja de carga
+    </p>
+
+
+    <!-- CARGANDO -->
+
+    <div id="estado-cargando">
+
+      <div class="esqueleto esqueleto--titulo"></div>
+
+      <div class="esqueleto esqueleto--linea"></div>
+
+      <div
+        class="esqueleto esqueleto--linea"
+        style="width:80%"
+      ></div>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="estado-error oculto"
+      id="estado-error"
+    >
+
+      <p
+        class="estado-error__titulo"
+        id="error-titulo"
+      >
+        No pudimos cargar la hoja de carga
+      </p>
+
+      <p
+        class="estado-error__texto"
+        id="error-texto"
+      >
+        Revisa tu conexión e inténtalo de nuevo.
+      </p>
+
+      <a
+        class="btn btn--secundario"
+        href="eventos.html"
+      >
+        Volver a eventos
+      </a>
+
+    </div>
+
+
+    <!-- DATOS -->
+
+    <div
+      id="estado-con-datos"
+      class="oculto"
+    >
+
+      <!-- ENCABEZADO -->
+
+      <div class="encabezado">
+
+        <div>
+
+          <h2 id="evento-nombre">
+            Hoja de carga
+          </h2>
+
+          <p
+            class="pequeno tenue mb-0"
+            id="evento-cliente"
+          ></p>
+
+        </div>
+
+        <span
+          class="etiqueta"
+          id="evento-estado"
+        ></span>
+
+      </div>
+
+
+      <!-- DATOS DEL EVENTO -->
+
+      <div class="tarjeta mb-5">
+
+        <div
+          class="fila"
+          style="align-items:flex-start"
+        >
+
+          <div style="flex:1 1 150px">
+
+            <p class="pequeno tenue mb-0">
+              Cliente
+            </p>
+
+            <p
+              class="mb-0"
+              id="dato-cliente"
+            >
+              —
+            </p>
+
+          </div>
+
+
+          <div style="flex:1 1 150px">
+
+            <p class="pequeno tenue mb-0">
+              Sede
+            </p>
+
+            <p
+              class="mb-0"
+              id="dato-sede"
+            >
+              —
+            </p>
+
+          </div>
+
+
+          <div style="flex:1 1 150px">
+
+            <p class="pequeno tenue mb-0">
+              Montaje
+            </p>
+
+            <p
+              class="mb-0"
+              id="dato-montaje"
+            >
+              —
+            </p>
+
+          </div>
+
+
+          <div style="flex:1 1 150px">
+
+            <p class="pequeno tenue mb-0">
+              Inicio
+            </p>
+
+            <p
+              class="mb-0"
+              id="dato-inicio"
+            >
+              —
+            </p>
+
+          </div>
+
+
+          <div style="flex:1 1 150px">
+
+            <p class="pequeno tenue mb-0">
+              Fin
+            </p>
+
+            <p
+              class="mb-0"
+              id="dato-fin"
+            >
+              —
+            </p>
+
+          </div>
+
+
+          <div style="flex:1 1 150px">
+
+            <p class="pequeno tenue mb-0">
+              Contacto
+            </p>
+
+            <p
+              class="mb-0"
+              id="dato-contacto"
+            >
+              —
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- HOJA DE CARGA -->
+
+      <section class="tarjeta">
+
+        <div class="encabezado">
+
+          <div>
+
+            <h3 class="tarjeta__titulo mb-0">
+              Hoja de carga
+            </h3>
+
+            <p
+              class="pequeno tenue mb-0"
+              style="margin-top:var(--e-1)"
+            >
+              Equipo que será enviado al evento.
+            </p>
+
+          </div>
+
+
+          <div class="fila empujar">
+
+            <span
+              class="pequeno tenue"
+              id="equipo-conteo"
+            >
+              0 piezas
+            </span>
+
+            <button
+              type="button"
+              class="btn btn--pequeno"
+              id="btn-agregar-equipo"
+            >
+              + Agregar equipo
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- ERROR -->
+
+        <div
+          class="aviso aviso--error oculto"
+          id="aviso-error-equipo"
+          role="alert"
+        ></div>
+
+
+        <!-- SIN EQUIPO -->
+
+        <div
+          id="estado-sin-equipo"
+          class="oculto"
+        >
+
+          <div class="estado-vacio">
+
+            <div class="estado-vacio__icono">
+              📦
+            </div>
+
+            <p class="estado-vacio__titulo">
+              No hay equipo asignado
+            </p>
+
+            <p class="estado-vacio__texto">
+              Agrega los equipos que serán enviados a este evento.
+            </p>
+
+            <button
+              type="button"
+              class="btn"
+              id="btn-agregar-primer-equipo"
+            >
+              + Agregar equipo
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- TABLA -->
+
+        <div
+          class="tabla-scroll oculto"
+          id="tabla-equipo-contenedor"
+        >
+
+          <table class="tabla">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Clave
+                </th>
+
+                <th>
+                  Equipo
+                </th>
+
+                <th>
+                  Condición
+                </th>
+
+                <th>
+                  Salida
+                </th>
+
+                <th>
+                  Retorno
+                </th>
+
+                <th>
+                  Acción
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody id="tabla-equipo-body"></tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+
+  <!-- MODAL AGREGAR EQUIPO -->
+
+  <div
+    id="modal-equipo"
+    class="oculto"
+  >
+
+    <div
+      class="tarjeta"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-equipo-titulo"
+      style="
+        position:fixed;
+        top:50%;
+        left:50%;
+        transform:translate(-50%,-50%);
+        width:min(900px,calc(100% - 32px));
+        max-height:80vh;
+        overflow:auto;
+        z-index:1001;
+      "
+    >
+
+      <div class="encabezado">
+
+        <div>
+
+          <h2
+            class="tarjeta__titulo mb-0"
+            id="modal-equipo-titulo"
+          >
+            Agregar equipo
+          </h2>
+
+          <p class="pequeno tenue mb-0">
+            Selecciona el equipo que deseas asignar al evento.
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn btn--pequeno btn--secundario"
+          id="btn-cerrar-modal"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div
+        class="aviso aviso--error oculto"
+        id="modal-error"
+        role="alert"
+      ></div>
+
+
+      <div
+        id="modal-cargando"
+        class="pequeno tenue"
+      >
+        Cargando equipos...
+      </div>
+
+
+      <div
+        class="tabla-scroll oculto"
+        id="modal-tabla-contenedor"
+      >
+
+        <table class="tabla">
+
+          <thead>
+    <tr>
+        <th>Clave</th>
+        <th>Equipo</th>
+        <th>Condición</th>
+        <th>Salida</th>
+        <th>Retorno</th>
+        <th>Acción</th>
+    </tr>
+</thead>
+
+          <tbody id="modal-equipo-body"></tbody>
+
+        </table>
+
+      </div>
+
+
+      <div
+        id="modal-vacio"
+        class="pequeno tenue oculto"
+        style="padding:var(--e-4) 0"
+      >
+        No hay equipos disponibles para agregar.
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- FONDO -->
+
+  <div
+    id="modal-overlay"
+    class="oculto"
+    style="
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      z-index:1000;
+    "
+  ></div>
+
+
+  <script
+    type="module"
+    src="/hoja-de-carga.js"
+  ></script>
+
+</body>
+
+</html>

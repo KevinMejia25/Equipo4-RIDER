@@ -51,6 +51,18 @@ let equiposCache = [];
 
 
 /* =========================================================
+   EQUIPOS EN USO
+========================================================= */
+
+/*
+ * Guarda los IDs de los equipos que actualmente
+ * están asignados a algún evento y todavía
+ * no tienen registrada una fecha de retorno.
+ */
+let equiposEnUso = new Set();
+
+
+/* =========================================================
    CONDICIONES
 ========================================================= */
 
@@ -136,10 +148,75 @@ function obtenerCondicion(condicion) {
 
 
 /* =========================================================
+   CARGAR EQUIPOS EN USO
+========================================================= */
+
+/*
+ * Un equipo se considera "En uso" cuando existe
+ * un registro en evento_equipo y todavía no tiene
+ * retorno_registrado.
+ */
+async function cargarEquiposEnUso() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from('evento_equipo')
+    .select(
+      'equipo_id, retorno_registrado'
+    )
+    .is(
+      'retorno_registrado',
+      null
+    );
+
+
+  if (error) {
+
+    console.error(
+      'Error al consultar equipos en uso:',
+      error
+    );
+
+    equiposEnUso = new Set();
+
+    return;
+
+  }
+
+
+  equiposEnUso = new Set(
+    (data || []).map(
+      item => String(item.equipo_id)
+    )
+  );
+
+}
+
+
+/* =========================================================
    OBTENER ESTADO
 ========================================================= */
 
 function obtenerEstado(equipo) {
+
+  /*
+   * PRIMERO:
+   * Si el equipo está asignado a un evento y
+   * todavía no ha sido devuelto, se considera
+   * "En uso".
+   */
+  if (
+    equiposEnUso.has(
+      String(equipo.id)
+    )
+  ) {
+
+    return 'en_uso';
+
+  }
+
 
   /*
    * Si posteriormente tu tabla equipos tiene
@@ -1861,6 +1938,13 @@ async function cargarEquipos() {
   mostrarSoloEstado(
     'cargando'
   );
+
+
+  /*
+   * Primero consultamos qué equipos están
+   * actualmente asignados a un evento.
+   */
+  await cargarEquiposEnUso();
 
 
   const {
