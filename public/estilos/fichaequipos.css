@@ -1,0 +1,832 @@
+/* =========================================================
+   RIDER - FICHA DE EQUIPO
+   HU-03
+========================================================= */
+
+
+/* =========================================================
+   PALETA
+========================================================= */
+
+.ficha-contenedor {
+  --ficha-azul: #2563eb;
+  --ficha-azul-hover: #1d4ed8;
+  --ficha-azul-suave: rgba(37, 99, 235, 0.12);
+
+  --ficha-verde: #10b981;
+  --ficha-verde-suave: rgba(16, 185, 129, 0.12);
+
+  --ficha-amarillo: #f59e0b;
+  --ficha-amarillo-suave: rgba(245, 158, 11, 0.12);
+
+  --ficha-rojo: #ef4444;
+  --ficha-rojo-suave: rgba(239, 68, 68, 0.12);
+
+  --ficha-fondo: #080d14;
+  --ficha-superficie: #0f1621;
+  --ficha-superficie-2: #111827;
+
+  --ficha-borde: #243041;
+  --ficha-borde-hover: #34445a;
+
+  --ficha-texto: #f8fafc;
+  --ficha-texto-suave: #cbd5e1;
+  --ficha-texto-tenue: #8b9bb0;
+
+  padding-top: var(--e-5);
+  padding-bottom: var(--e-6);
+}
+
+
+/* =========================================================
+   VOLVER
+========================================================= */
+
+.ficha-volver {
+  display: inline-block;
+  margin-bottom: 2px;
+
+  color: var(--ficha-azul);
+
+  font-size: var(--t-sm);
+  font-weight: 700;
+
+  text-decoration: none;
+
+  transition: color 0.15s ease;
+}
+
+.ficha-volver:hover {
+  color: #60a5fa;
+}
+
+.ficha-miga {
+  margin-bottom: var(--e-4);
+
+  color: var(--ficha-texto-tenue);
+  font-size: var(--t-xs);
+}
+
+
+/* =========================================================
+   TARJETA PRINCIPAL
+========================================================= */
+
+.ficha-principal {
+  padding: var(--e-4);
+
+  background: var(--ficha-superficie);
+
+  border: 1px solid var(--ficha-borde);
+  border-radius: var(--radio);
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.20);
+}
+
+
+/* =========================================================
+   ENCABEZADO
+========================================================= */
+
+.ficha-encabezado {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: var(--e-4);
+}
+
+.ficha-encabezado h1 {
+  margin: 0 0 var(--e-1);
+
+  color: var(--ficha-texto);
+
+  font-size: var(--t-xl);
+  line-height: 1.2;
+}
+
+.ficha-encabezado p {
+  margin: 0;
+
+  color: var(--ficha-texto-suave);
+
+  font-size: var(--t-xs);
+}
+
+.ficha-separador {
+  height: 1px;
+
+  margin: var(--e-4) 0;
+
+  background: var(--ficha-borde);
+}
+
+
+/* =========================================================
+   ESTADOS
+========================================================= */
+
+.ficha-estado {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  width: fit-content;
+
+  padding: 4px 9px;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  line-height: 1.2;
+
+  white-space: nowrap;
+}
+
+
+/* DISPONIBLE */
+
+.ficha-estado--disponible {
+  color: var(--ficha-verde);
+
+  background: var(--ficha-verde-suave);
+
+  border: 1px solid var(--ficha-verde);
+}
+
+
+/* COMPROMETIDO */
+
+.ficha-estado--comprometido {
+  color: var(--ficha-amarillo);
+
+  background: var(--ficha-amarillo-suave);
+
+  border: 1px solid var(--ficha-amarillo);
+}
+
+
+/* MANTENIMIENTO */
+
+.ficha-estado--mantenimiento {
+  color: var(--ficha-rojo);
+
+  background: var(--ficha-rojo-suave);
+
+  border: 1px solid var(--ficha-rojo);
+}
+
+
+/* =========================================================
+   DATOS DEL EQUIPO
+========================================================= */
+
+.equipo-datos {
+  display: grid;
+
+  grid-template-columns:
+    80px
+    1.5fr
+    1fr
+    1fr
+    1fr;
+
+  gap: var(--e-4);
+
+  padding: var(--e-4);
+
+  background: var(--ficha-fondo);
+
+  border: 1px solid var(--ficha-borde);
+
+  border-radius: var(--radio);
+}
+
+
+/* =========================================================
+   ICONO
+========================================================= */
+
+.equipo-icono {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--ficha-azul);
+
+  border-radius: var(--radio);
+
+  background: var(--ficha-azul-suave);
+
+  color: var(--ficha-azul);
+
+  font-size: 28px;
+}
+
+
+/* =========================================================
+   DATOS
+========================================================= */
+
+.equipo-dato {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: var(--e-1);
+
+  min-width: 0;
+}
+
+.equipo-dato--principal {
+  justify-content: center;
+}
+
+.equipo-dato__etiqueta {
+  margin-top: 2px;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-xs);
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+.equipo-dato strong {
+  color: var(--ficha-azul);
+
+  font-size: var(--t-lg);
+}
+
+.equipo-dato > span:not(.equipo-dato__etiqueta) {
+  color: var(--ficha-texto);
+
+  font-size: var(--t-sm);
+}
+
+.equipo-dato small {
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-xs);
+}
+
+.ficha-condicion {
+  color: var(--ficha-verde) !important;
+}
+
+
+/* =========================================================
+   DISPONIBILIDAD
+========================================================= */
+
+.disponibilidad {
+  margin-top: var(--e-5);
+}
+
+.seccion-titulo {
+  margin-bottom: var(--e-3);
+}
+
+.seccion-titulo h2 {
+  margin: 0 0 var(--e-1);
+
+  color: var(--ficha-azul);
+
+  font-size: var(--t-lg);
+}
+
+.seccion-titulo p {
+  margin: 0;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-xs);
+}
+
+
+/* =========================================================
+   RESUMEN
+========================================================= */
+
+.disponibilidad-resumen {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    1.5fr
+    1.4fr
+    1fr;
+
+  gap: var(--e-4);
+
+  padding: var(--e-4);
+
+  background: var(--ficha-fondo);
+
+  border: 1px solid var(--ficha-borde);
+
+  border-radius: var(--radio);
+}
+
+.disponibilidad-resumen > div {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: var(--e-1);
+}
+
+.resumen-etiqueta {
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-xs);
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+.disponibilidad-resumen span:not(.resumen-etiqueta) {
+  color: var(--ficha-texto);
+
+  font-size: var(--t-sm);
+}
+
+.fecha-libre {
+  color: var(--ficha-verde) !important;
+
+  font-size: var(--t-sm) !important;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   CALENDARIO
+========================================================= */
+
+.calendario {
+  margin-top: var(--e-4);
+
+  padding: var(--e-4);
+
+  background: var(--ficha-fondo);
+
+  border: 1px solid var(--ficha-borde);
+
+  border-radius: var(--radio);
+}
+
+.calendario__titulo {
+  margin-bottom: var(--e-3);
+
+  color: var(--ficha-azul);
+
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.lista-eventos {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: var(--e-2);
+}
+
+
+/* =========================================================
+   EVENTOS
+========================================================= */
+
+.evento-item {
+  display: grid;
+
+  grid-template-columns:
+    140px
+    1fr
+    150px
+    150px;
+
+  align-items: center;
+
+  gap: var(--e-3);
+
+  padding: var(--e-3);
+
+  background: var(--ficha-superficie);
+
+  border: 1px solid var(--ficha-borde);
+
+  border-radius: var(--radio-sm);
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.evento-item:hover {
+  border-color: var(--ficha-borde-hover);
+
+  background: var(--ficha-superficie-2);
+}
+
+
+/* =========================================================
+   ESTADO DEL EVENTO
+========================================================= */
+
+.evento-item__estado {
+  width: fit-content;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  color: var(--ficha-amarillo);
+
+  background: var(--ficha-amarillo-suave);
+
+  border: 1px solid var(--ficha-amarillo);
+
+  font-size: var(--t-xs);
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   NOMBRE
+========================================================= */
+
+.evento-item__nombre {
+  color: var(--ficha-texto);
+
+  font-size: var(--t-sm);
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   FECHA
+========================================================= */
+
+.evento-item__fecha {
+  color: var(--ficha-texto-suave);
+
+  font-size: var(--t-xs);
+}
+
+
+/* =========================================================
+   LIBRE
+========================================================= */
+
+.evento-item__libre {
+  color: var(--ficha-verde);
+
+  font-size: var(--t-xs);
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   CARGANDO
+========================================================= */
+
+.estado-carga {
+  padding: var(--e-5);
+
+  text-align: center;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-sm);
+}
+
+
+/* =========================================================
+   MENSAJES
+========================================================= */
+
+.ficha-mensaje {
+  margin-top: var(--e-3);
+
+  padding: var(--e-3);
+
+  border-radius: var(--radio-sm);
+
+  font-size: var(--t-sm);
+}
+
+.ficha-mensaje--error {
+  color: var(--ficha-rojo);
+
+  background: var(--ficha-rojo-suave);
+
+  border: 1px solid var(--ficha-rojo);
+}
+
+.oculto {
+  display: none !important;
+}
+
+
+/* =========================================================
+   CALENDARIO VISUAL
+========================================================= */
+
+.calendario-visual {
+  width: 100%;
+
+  overflow-x: auto;
+
+  padding: 8px 4px 12px;
+}
+
+
+/* MES */
+
+.calendario-visual__mes {
+  margin-bottom: 14px;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-xs);
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+
+/* DÍAS */
+
+.calendario-visual__dias {
+  display: grid;
+
+  grid-auto-flow: column;
+
+  grid-auto-columns: minmax(42px, 1fr);
+
+  min-width: 520px;
+
+  margin-bottom: 4px;
+
+  padding: 0 8px;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: 9px;
+
+  text-align: center;
+}
+
+.calendario-visual__dias span {
+  display: block;
+
+  padding-bottom: 6px;
+}
+
+.calendario-visual__dia--hoy {
+  color: var(--ficha-azul) !important;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   LÍNEA
+========================================================= */
+
+.calendario-visual__track {
+  position: relative;
+
+  min-width: 520px;
+
+  height: 45px;
+
+  margin: 0 8px;
+
+  border-top: 2px solid var(--ficha-borde-hover);
+}
+
+
+/* =========================================================
+   EVENTO DEL CALENDARIO
+========================================================= */
+
+.calendario-visual__evento {
+  position: absolute;
+
+  min-width: 90px;
+
+  height: 26px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 10px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--ficha-azul);
+
+  border-radius: 999px;
+
+  background: var(--ficha-azul);
+
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
+  transform: translateY(-50%);
+
+  box-shadow:
+    0 3px 8px rgba(37, 99, 235, 0.25);
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.calendario-visual__evento:hover {
+  background: var(--ficha-azul-hover);
+
+  transform: translateY(-50%) scale(1.02);
+
+  box-shadow:
+    0 5px 12px rgba(37, 99, 235, 0.35);
+}
+
+
+/* =========================================================
+   PUNTO DE LIBERACIÓN
+========================================================= */
+
+.calendario-visual__libre {
+  position: absolute;
+
+  width: 12px;
+  height: 12px;
+
+  display: block;
+
+  border: 3px solid var(--ficha-fondo);
+
+  border-radius: 50%;
+
+  background: var(--ficha-verde);
+
+  box-shadow:
+    0 0 0 1px var(--ficha-verde),
+    0 0 8px rgba(16, 185, 129, 0.35);
+
+  transform: translate(-50%, 0);
+
+  z-index: 2;
+}
+
+
+/* =========================================================
+   LEYENDA
+========================================================= */
+
+.calendario-visual__leyenda {
+  display: flex;
+
+  justify-content: flex-end;
+
+  margin-top: 16px;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-xs);
+}
+
+.calendario-visual__leyenda span {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+}
+
+.calendario-visual__punto {
+  width: 8px;
+  height: 8px;
+
+  display: inline-block;
+
+  border-radius: 50%;
+
+  background: var(--ficha-verde);
+}
+
+
+/* =========================================================
+   CALENDARIO VACÍO
+========================================================= */
+
+.calendario-vacio {
+  min-height: 100px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: var(--ficha-texto-tenue);
+
+  font-size: var(--t-sm);
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .equipo-datos {
+    grid-template-columns:
+      70px
+      1fr 1fr;
+  }
+
+  .disponibilidad-resumen {
+    grid-template-columns:
+      1fr 1fr;
+  }
+
+  .evento-item {
+    grid-template-columns:
+      1fr 1fr;
+  }
+
+}
+
+
+/* =========================================================
+   MÓVIL
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .ficha-contenedor {
+    padding-top: var(--e-4);
+  }
+
+  .ficha-principal {
+    padding: var(--e-3);
+  }
+
+  .ficha-encabezado {
+    flex-direction: column;
+  }
+
+  .equipo-datos {
+    grid-template-columns: 1fr;
+  }
+
+  .equipo-icono {
+    margin-bottom: var(--e-1);
+  }
+
+  .disponibilidad-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .evento-item {
+    grid-template-columns: 1fr;
+  }
+
+  .calendario-visual__dias,
+  .calendario-visual__track {
+    min-width: 650px;
+  }
+
+}

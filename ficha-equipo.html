@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Ficha de equipo | RIDER</title>
+
+
+  <!-- =====================================================
+       ESTILOS
+  ====================================================== -->
+
+  <!-- Estilos generales de RIDER -->
+  <link rel="stylesheet" href="/estilos/ui.css">
+
+  <!-- Estilos específicos de la ficha -->
+  <link rel="stylesheet" href="/estilos/fichaequipos.css">
+
+</head>
+
+
+<body>
+
+  <div class="app">
+
+
+    <!-- =====================================================
+         BARRA PRINCIPAL
+    ====================================================== -->
+
+    <header class="barra">
+
+      <h1 class="barra__titulo">
+        RIDER
+      </h1>
+
+
+      <div class="barra__acciones">
+
+        <span class="pequeno tenue">
+          Coordinador
+        </span>
+
+
+        <a
+          class="btn btn--pequeno btn--secundario"
+          href="login.html"
+        >
+          Salir
+        </a>
+
+      </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         NAVEGACIÓN PRINCIPAL
+    ====================================================== -->
+
+    <nav
+      class="pestanas"
+      role="tablist"
+    >
+
+      <a
+        class="pestana"
+        href="index.html"
+        role="tab"
+        aria-selected="false"
+      >
+        Inicio
+      </a>
+
+
+      <a
+        class="pestana"
+        href="inventario.html"
+        role="tab"
+        aria-selected="true"
+      >
+        Inventario
+      </a>
+
+
+      <a
+        class="pestana"
+        href="eventos.html"
+        role="tab"
+        aria-selected="false"
+      >
+        Eventos
+      </a>
+
+
+      <a
+        class="pestana"
+        href="clientes.html"
+        role="tab"
+        aria-selected="false"
+      >
+        Clientes
+      </a>
+
+
+      <a
+        class="pestana"
+        href="cuadrilla.html"
+        role="tab"
+        aria-selected="false"
+      >
+        Cuadrilla
+      </a>
+
+    </nav>
+
+
+    <!-- =====================================================
+         CONTENIDO
+    ====================================================== -->
+
+    <main class="contenedor ficha-contenedor">
+
+
+      <!-- =================================================
+           VOLVER
+      ================================================== -->
+
+      <a
+        href="inventario.html"
+        class="ficha-volver"
+      >
+        ← Volver al inventario
+      </a>
+
+
+      <div class="ficha-miga">
+        Inventario / Ficha de equipo
+      </div>
+
+
+      <!-- =================================================
+           FICHA PRINCIPAL
+      ================================================== -->
+
+      <section class="ficha-principal">
+
+
+        <!-- =================================================
+             ENCABEZADO
+        ================================================== -->
+
+        <div class="ficha-encabezado">
+
+          <div>
+
+            <h1>
+              Ficha de equipo
+            </h1>
+
+            <p>
+              Consulta la información del equipo y sus fechas comprometidas.
+            </p>
+
+          </div>
+
+
+          <span
+            id="estado-superior"
+            class="ficha-estado ficha-estado--disponible"
+          >
+            ● Disponible
+          </span>
+
+        </div>
+
+
+        <div class="ficha-separador"></div>
+
+
+        <!-- =================================================
+             DATOS DEL EQUIPO
+        ================================================== -->
+
+        <section class="equipo-datos">
+
+
+          <!-- ICONO -->
+
+          <div
+            class="equipo-icono"
+            aria-hidden="true"
+          >
+            <span>□</span>
+          </div>
+
+
+          <!-- INFORMACIÓN PRINCIPAL -->
+
+          <div class="equipo-dato equipo-dato--principal">
+
+            <span class="equipo-dato__etiqueta">
+              Clave del equipo
+            </span>
+
+            <strong id="equipo-clave">
+              —
+            </strong>
+
+            <span id="equipo-nombre">
+              —
+            </span>
+
+            <small id="equipo-categoria">
+              —
+            </small>
+
+          </div>
+
+
+          <!-- MARCA / MODELO -->
+
+          <div class="equipo-dato">
+
+            <span class="equipo-dato__etiqueta">
+              Marca
+            </span>
+
+            <span id="equipo-marca">
+              —
+            </span>
+
+
+            <span class="equipo-dato__etiqueta">
+              Modelo
+            </span>
+
+            <span id="equipo-modelo">
+              —
+            </span>
+
+          </div>
+
+
+          <!-- SERIE / CONDICIÓN -->
+
+          <div class="equipo-dato">
+
+            <span class="equipo-dato__etiqueta">
+              Número de serie
+            </span>
+
+            <span id="equipo-serie">
+              —
+            </span>
+
+
+            <span class="equipo-dato__etiqueta">
+              Condición
+            </span>
+
+            <span
+              id="equipo-condicion"
+              class="ficha-condicion"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <!-- ESTADO / REVISIÓN -->
+
+          <div class="equipo-dato">
+
+            <span class="equipo-dato__etiqueta">
+              Estado actual
+            </span>
+
+            <span
+              id="equipo-estado"
+              class="ficha-estado ficha-estado--disponible"
+            >
+              ● Disponible
+            </span>
+
+
+        </section>
+
+
+        <!-- =================================================
+             DISPONIBILIDAD
+        ================================================== -->
+
+        <section class="disponibilidad">
+
+
+          <div class="seccion-titulo">
+
+            <h2>
+              Disponibilidad del equipo
+            </h2>
+
+            <p>
+              Eventos en los que está comprometido y fecha en que vuelve a estar libre.
+            </p>
+
+          </div>
+
+
+          <!-- =================================================
+               RESUMEN DE DISPONIBILIDAD
+          ================================================== -->
+
+          <div
+            id="disponibilidad-resumen"
+            class="disponibilidad-resumen"
+          >
+
+
+            <!-- ESTADO -->
+
+            <div>
+
+              <span class="resumen-etiqueta">
+                Estado de disponibilidad
+              </span>
+
+              <span
+                id="resumen-estado"
+                class="ficha-estado ficha-estado--disponible"
+              >
+                ● Disponible
+              </span>
+
+            </div>
+
+
+            <!-- EVENTO -->
+
+            <div>
+
+              <span class="resumen-etiqueta">
+                Evento actual
+              </span>
+
+              <span id="evento-actual">
+                Sin evento comprometido
+              </span>
+
+            </div>
+
+
+            <!-- FECHAS -->
+
+            <div>
+
+              <span class="resumen-etiqueta">
+                Fechas comprometidas
+              </span>
+
+              <span id="fechas-comprometidas">
+                —
+              </span>
+
+            </div>
+
+
+            <!-- FECHA DE LIBERACIÓN -->
+
+            <div>
+
+              <span class="resumen-etiqueta">
+                Vuelve a estar libre
+              </span>
+
+              <strong
+                id="fecha-libre"
+                class="fecha-libre"
+              >
+                Disponible
+              </strong>
+
+            </div>
+
+
+          </div>
+
+
+          <!-- =================================================
+               CALENDARIO
+          ================================================== -->
+
+          <div class="calendario">
+
+
+            <div class="calendario__titulo">
+              Calendario de compromisos
+            </div>
+
+
+            <div
+              id="lista-eventos"
+              class="lista-eventos"
+            >
+
+              <div class="estado-carga">
+                Cargando disponibilidad...
+              </div>
+
+            </div>
+
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             MENSAJE DE ERROR
+        ================================================== -->
+
+        <div
+          id="estado-error"
+          class="ficha-mensaje ficha-mensaje--error oculto"
+        >
+          No se pudo cargar la información del equipo.
+        </div>
+
+
+      </section>
+
+
+    </main>
+
+
+  </div>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="/ficha-equipo.js"
+  ></script>
+
+
+</body>
+
+</html>
