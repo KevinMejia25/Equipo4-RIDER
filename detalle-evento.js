@@ -34,12 +34,12 @@ const ETIQUETA_POR_ESTADO = {
   cancelado:  { clase: 'etiqueta--cancelado',  texto: 'Cancelado' },
 };
 
-// Botones que muestra el diseño de Figma en cada estado. Por ahora salen
-// deshabilitados: solo se dibuja la interfaz según el estado.
-// Sprint 3 (HU-08, HU-12, HU-13): aquí se conecta cada acción y se quita `disabled`.
+// Botones que muestra el diseño de Figma en cada estado.
+// Los que traen `accion` ya están conectados (HU-08: Confirmar). Los demás se
+// dibujan deshabilitados hasta que les toque su historia (HU-12, HU-13, ...).
 // Los estados finales (cerrado, cancelado) no tienen acciones.
 const ACCIONES_POR_ESTADO = {
-  cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Confirmar evento', clase: '' }],
+  cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
   confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Pasar a montaje', clase: '' }],
   en_montaje: [{ texto: 'Cerrar evento', clase: '' }],
   cerrado:    [],
@@ -65,7 +65,92 @@ function celda(texto, clase) {
   return td;
 }
 
-function pintarAcciones(estado) {
+// ── Aviso con el resultado de confirmar (HU-08) ──
+const elAviso = document.getElementById('aviso-confirmacion');
+const elAvisoLista = document.getElementById('aviso-confirmacion-lista');
+
+function limpiarAvisoConfirmacion() {
+  elAviso.className = 'aviso oculto';
+  elAvisoLista.innerHTML = '';
+}
+
+// tipo: 'exito' | 'error'. Todo con textContent: los nombres de equipo y de
+// evento los escribe una persona y no deben interpretarse como HTML.
+function mostrarAvisoConfirmacion(tipo, titulo, texto, conflictos = []) {
+  elAviso.className = `aviso aviso--${tipo} mb-5`;
+  document.getElementById('aviso-confirmacion-titulo').textContent = titulo;
+  document.getElementById('aviso-confirmacion-texto').textContent = texto;
+  elAvisoLista.innerHTML = '';
+
+  conflictos.forEach((c) => {
+    const estado = ETIQUETA_POR_ESTADO[c.evento_estado]?.texto ?? c.evento_estado;
+    const li = document.createElement('li');
+    li.textContent =
+      `${c.equipo_clave} · ${c.equipo_nombre} — ya está en «${c.evento_nombre}» ` +
+      `(${estado}), del ${formatearFecha(c.fecha_montaje)} al ${formatearFecha(c.fecha_fin)}`;
+    elAvisoLista.appendChild(li);
+  });
+}
+
+// La confirmación NO es un UPDATE desde el navegador: se llama a la función
+// confirmar_evento del servidor, que revisa el traslape y cambia el estado en
+// la misma transacción (hu08_confirmar_evento.sql). Lo que el navegador "sabía"
+// al cargar la pantalla no cuenta; manda lo que responda el servidor.
+async function confirmarEvento(boton, eventoId) {
+  limpiarAvisoConfirmacion();
+  const textoOriginal = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = 'Confirmando…';
+
+  const { data, error } = await supabase.rpc('confirmar_evento', { p_evento_id: eventoId });
+
+  if (error) {
+    console.error('Error al confirmar el evento:', error);
+    mostrarAvisoConfirmacion('error', 'No se pudo confirmar el evento.', 'Revisa tu conexión e inténtalo de nuevo.');
+    boton.disabled = false;
+    boton.textContent = textoOriginal;
+    return;
+  }
+
+  if (data.ok) {
+    await cargarDetalle(); // redibuja el estado y los botones del evento ya confirmado
+    mostrarAvisoConfirmacion(
+      'exito',
+      'Evento confirmado.',
+      data.piezas === 0
+        ? 'Todavía no tiene equipo en su hoja de carga, así que por ahora no aparta ninguna pieza.'
+        : `Sus ${data.piezas} pieza${data.piezas === 1 ? '' : 's'} quedan apartadas para estas fechas.`
+    );
+    return;
+  }
+
+  // El servidor lo rechazó.
+  if (data.codigo === 'traslape') {
+    mostrarAvisoConfirmacion(
+      'error',
+      'No se puede confirmar: hay equipo comprometido en fechas que se cruzan.',
+      'Quita estas piezas de la hoja de carga o cambia las fechas del evento:',
+      data.conflictos ?? []
+    );
+    boton.disabled = false;
+    boton.textContent = textoOriginal;
+    return;
+  }
+
+  if (data.codigo === 'estado_invalido') {
+    // Alguien más lo cambió mientras esta pantalla estaba abierta: se recarga
+    // para mostrar el estado real.
+    await cargarDetalle();
+    mostrarAvisoConfirmacion('error', 'No se pudo confirmar.', data.mensaje);
+    return;
+  }
+
+  mostrarAvisoConfirmacion('error', 'No se pudo confirmar.', data.mensaje ?? 'Inténtalo de nuevo.');
+  boton.disabled = false;
+  boton.textContent = textoOriginal;
+}
+
+function pintarAcciones(estado, eventoId) {
   const contenedor = document.getElementById('acciones-estado');
   contenedor.innerHTML = '';
 
@@ -80,12 +165,17 @@ function pintarAcciones(estado) {
     return;
   }
 
-  acciones.forEach(({ texto, clase }) => {
+  acciones.forEach(({ texto, clase, accion }) => {
     const boton = document.createElement('button');
     boton.type = 'button';
     boton.className = `btn ${clase}`.trim();
     boton.textContent = texto;
-    boton.disabled = true;
+
+    if (accion === 'confirmar') {
+      boton.addEventListener('click', () => confirmarEvento(boton, eventoId));
+    } else {
+      boton.disabled = true; // todavía sin conectar (su historia es de otro sprint)
+    }
     contenedor.appendChild(boton);
   });
 }
@@ -98,7 +188,7 @@ function pintarEvento(evento) {
   etiqueta.className = `etiqueta ${info.clase}`;
   etiqueta.textContent = info.texto;
 
-  pintarAcciones(evento.estado);
+  pintarAcciones(evento.estado, evento.id);
 
   document.getElementById('dato-cliente').textContent = evento.clientes?.nombre ?? '—';
   document.getElementById('dato-sede').textContent = evento.sede ?? '—';
@@ -121,7 +211,7 @@ function pintarEvento(evento) {
   enlaceHoja.classList.toggle('oculto', !editable);
 
   const enlaceCuadrilla = document.getElementById('enlace-cuadrilla');
-  enlaceCuadrilla.href = `cuadrilla.html?evento_id=${id}`;
+  enlaceCuadrilla.href = `asignar-cuadrilla.html?evento_id=${id}`;
   enlaceCuadrilla.classList.toggle('oculto', !editable);
 }
 
@@ -164,6 +254,7 @@ async function cargarDetalle() {
   }
 
   mostrarSoloEstado('cargando');
+  limpiarAvisoConfirmacion();
 
   // Las tres consultas son independientes: se piden al mismo tiempo.
   const [resEvento, resEquipo, resCuadrilla] = await Promise.all([

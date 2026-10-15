@@ -57,6 +57,16 @@
         </div>
       </div>
 
+      <!-- Resultado de Confirmar (HU-08): éxito, o rechazo con las piezas que chocan.
+           El tipo (aviso--exito / aviso--error) lo pone detalle-evento.js. -->
+      <div class="aviso oculto" id="aviso-confirmacion" role="alert">
+        <span>
+          <strong id="aviso-confirmacion-titulo"></strong>
+          <span id="aviso-confirmacion-texto"></span>
+          <ul id="aviso-confirmacion-lista" style="margin: var(--e-2) 0 0; padding-left: var(--e-4)"></ul>
+        </span>
+      </div>
+
       <!-- Motivo de cancelación: solo se muestra si el evento está cancelado -->
       <div class="aviso aviso--error mb-5 oculto" id="aviso-cancelacion">
         <span><strong>Motivo de cancelación:</strong> <span id="dato-motivo"></span></span>
