@@ -51,6 +51,17 @@ let equiposCache = [];
 
 
 /* =========================================================
+   EQUIPOS EN USO
+========================================================= */
+
+/*
+ * Guarda los IDs de los equipos que tienen
+ * un registro en evento_equipo.
+ */
+let equiposEnUso = new Set();
+
+
+/* =========================================================
    CONDICIONES
 ========================================================= */
 
@@ -136,10 +147,79 @@ function obtenerCondicion(condicion) {
 
 
 /* =========================================================
+   CARGAR EQUIPOS EN USO
+========================================================= */
+
+/*
+ * CAMBIO:
+ * Si existe un registro en evento_equipo,
+ * el equipo se considera asignado y aparece
+ * como "En uso".
+ *
+ * Cuando se elimina la asignación desde la hoja
+ * de carga, el equipo dejará de aparecer aquí.
+ *
+ * No filtramos por retorno_registrado porque
+ * ese campo puede contener una fecha programada
+ * y no necesariamente significa que el equipo
+ * ya fue devuelto.
+ */
+
+async function cargarEquiposEnUso() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from('evento_equipo')
+    .select('equipo_id');
+
+
+  if (error) {
+
+    console.error(
+      'Error al consultar equipos asignados:',
+      error
+    );
+
+    throw new Error(
+      'No se pudo consultar qué equipos están asignados.'
+    );
+
+  }
+
+
+  equiposEnUso = new Set(
+    (data || []).map(
+      item => String(item.equipo_id)
+    )
+  );
+
+}
+
+
+/* =========================================================
    OBTENER ESTADO
 ========================================================= */
 
 function obtenerEstado(equipo) {
+
+  /*
+   * PRIMERO:
+   * Si el equipo tiene una asignación en
+   * evento_equipo, se considera "En uso".
+   */
+
+  if (
+    equiposEnUso.has(
+      String(equipo.id)
+    )
+  ) {
+
+    return 'en_uso';
+
+  }
+
 
   /*
    * Si posteriormente tu tabla equipos tiene
@@ -879,42 +959,44 @@ async function abrirModalEditar(equipo) {
 
       </div>
 
-<!-- CONDICIÓN -->
 
-<div
-  class="inventario-modal__campo inventario-modal__campo--completo"
->
+      <!-- CONDICIÓN -->
 
-  <label for="editar-condicion">
-    Condición
-  </label>
+      <div
+        class="inventario-modal__campo inventario-modal__campo--completo"
+      >
 
-  <select id="editar-condicion">
+        <label for="editar-condicion">
+          Condición
+        </label>
 
-    <option
-      value="buen_estado"
-      ${equipo.condicion === 'buen_estado' ? 'selected' : ''}
-    >
-      Buen estado
-    </option>
+        <select id="editar-condicion">
 
-    <option
-      value="dañado"
-      ${equipo.condicion === 'dañado' ? 'selected' : ''}
-    >
-      Dañado
-    </option>
+          <option
+            value="buen_estado"
+            ${equipo.condicion === 'buen_estado' ? 'selected' : ''}
+          >
+            Buen estado
+          </option>
 
-    <option
-      value="faltante"
-      ${equipo.condicion === 'faltante' ? 'selected' : ''}
-    >
-      Faltante
-    </option>
+          <option
+            value="dañado"
+            ${equipo.condicion === 'dañado' ? 'selected' : ''}
+          >
+            Dañado
+          </option>
 
-  </select>
+          <option
+            value="faltante"
+            ${equipo.condicion === 'faltante' ? 'selected' : ''}
+          >
+            Faltante
+          </option>
 
-</div>
+        </select>
+
+      </div>
+
 
       <!-- ESTADO DEL REGISTRO -->
 
@@ -1168,6 +1250,7 @@ async function abrirModalEditar(equipo) {
 
 }
 
+
 /* =========================================================
    MODAL ELIMINAR
 ========================================================= */
@@ -1216,9 +1299,8 @@ function abrirModalEliminar(equipo) {
     '#inventario-modal-footer'
   );
 
-  /* =======================================================
-     BOTÓN CANCELAR
-  ======================================================= */
+
+  /* BOTÓN CANCELAR */
 
   const btnCerrar = crearBotonModal(
     'Cancelar',
@@ -1233,9 +1315,7 @@ function abrirModalEliminar(equipo) {
   );
 
 
-  /* =======================================================
-     BOTÓN ELIMINAR
-  ======================================================= */
+  /* BOTÓN ELIMINAR */
 
   const btnEliminar = crearBotonModal(
     'Eliminar equipo',
@@ -1252,9 +1332,7 @@ function abrirModalEliminar(equipo) {
         'Eliminando...';
 
 
-      /* =====================================================
-         ELIMINAR DE SUPABASE
-      ===================================================== */
+      /* ELIMINAR DE SUPABASE */
 
       const {
         error
@@ -1267,9 +1345,7 @@ function abrirModalEliminar(equipo) {
         );
 
 
-      /* =====================================================
-         ERROR
-      ===================================================== */
+      /* ERROR */
 
       if (error) {
 
@@ -1292,9 +1368,7 @@ function abrirModalEliminar(equipo) {
       }
 
 
-      /* =====================================================
-         ÉXITO
-      ===================================================== */
+      /* ÉXITO */
 
       cerrarModal(modal);
 
@@ -1304,9 +1378,7 @@ function abrirModalEliminar(equipo) {
   );
 
 
-  /* =======================================================
-     AGREGAR BOTONES
-  ======================================================= */
+  /* AGREGAR BOTONES */
 
   footer.appendChild(
     btnCerrar
@@ -1317,7 +1389,6 @@ function abrirModalEliminar(equipo) {
   );
 
 }
-
 
 
 /* =========================================================
@@ -1415,9 +1486,7 @@ function renderFila(equipo) {
   );
 
 
-  /* =======================================================
-     ACCIONES
-  ======================================================= */
+  /* ACCIONES */
 
   const tdAcciones =
     document.createElement('td');
@@ -1426,9 +1495,7 @@ function renderFila(equipo) {
     'inventario-acciones';
 
 
-  /* =======================================================
-     EDITAR
-  ======================================================= */
+  /* EDITAR */
 
   const btnEditar =
     document.createElement('button');
@@ -1477,9 +1544,7 @@ function renderFila(equipo) {
   );
 
 
-  /* =======================================================
-     VER
-  ======================================================= */
+  /* VER */
 
   const btnVer =
     document.createElement('button');
@@ -1532,9 +1597,7 @@ function renderFila(equipo) {
   );
 
 
-  /* =======================================================
-     ELIMINAR
-  ======================================================= */
+  /* ELIMINAR */
 
   const btnEliminar =
     document.createElement('button');
@@ -1863,6 +1926,33 @@ async function cargarEquipos() {
   );
 
 
+  /*
+   * CAMBIO:
+   * Primero consultamos los equipos asignados.
+   * Si esa consulta falla, mostramos el error
+   * y no presentamos los equipos como disponibles.
+   */
+
+  try {
+
+    await cargarEquiposEnUso();
+
+  } catch (error) {
+
+    console.error(
+      'No se pudo actualizar el estado de los equipos:',
+      error
+    );
+
+    mostrarSoloEstado(
+      'error'
+    );
+
+    return;
+
+  }
+
+
   const {
     data,
     error
@@ -1953,6 +2043,75 @@ if (
   );
 
 }
+
+
+/* =========================================================
+   ACTUALIZAR AL REGRESAR A LA PESTAÑA
+========================================================= */
+
+/*
+ * Si asignas o quitas un equipo desde otra pestaña,
+ * volvemos a consultar el inventario al regresar.
+ */
+
+window.addEventListener(
+  'focus',
+  () => {
+    cargarEquipos();
+  }
+);
+
+
+document.addEventListener(
+  'visibilitychange',
+  () => {
+
+    if (!document.hidden) {
+      cargarEquipos();
+    }
+
+  }
+);
+
+
+/* =========================================================
+   ACTUALIZACIÓN EN TIEMPO REAL CON SUPABASE
+========================================================= */
+
+/*
+ * Intenta actualizar el inventario cuando se inserta,
+ * modifica o elimina un registro de evento_equipo.
+ *
+ * Para que funcione en tiempo real, la tabla
+ * evento_equipo debe estar habilitada en Supabase
+ * Realtime. Si no lo está, siguen funcionando
+ * las actualizaciones al regresar a la pestaña.
+ */
+
+const canalInventario = supabase
+  .channel('inventario-cambios-evento-equipo')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'evento_equipo'
+    },
+    () => {
+      cargarEquipos();
+    }
+  )
+  .subscribe((estado) => {
+
+    if (estado === 'CHANNEL_ERROR') {
+
+      console.error(
+        'No se pudo activar la actualización en tiempo real del inventario.'
+      );
+
+    }
+
+  });
 
 
 /* =========================================================

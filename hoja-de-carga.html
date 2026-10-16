@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>RIDER · Hoja de carga</title>
+
+  <link rel="stylesheet" href="/estilos/ui.css">
+
+  <style>
+    /* Mejoras visuales específicas de la hoja de carga */
+
+    .datos-evento {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 20px;
+    }
+
+    .dato-evento {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, .14);
+      border-radius: 10px;
+      background: rgba(148, 163, 184, .035);
+    }
+
+    .dato-evento p:last-child {
+      overflow-wrap: anywhere;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .tabla-scroll {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 10px;
+    }
+
+    .tabla {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .tabla th,
+    .tabla td {
+      padding: 14px 16px;
+      vertical-align: middle;
+    }
+
+    .tabla tbody tr:hover {
+      background: rgba(99, 102, 241, .055);
+    }
+
+    .equipo-clave {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 7px;
+      background: rgba(99, 102, 241, .12);
+      color: #a5b4fc;
+      font-size: .8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .condicion-equipo {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, .10);
+      font-size: .8rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .retorno-celda {
+      min-width: 220px;
+    }
+
+    .retorno-etiqueta {
+      display: block;
+      margin-bottom: 7px;
+      font-size: .75rem;
+      color: #a5b4fc;
+      font-weight: 600;
+    }
+
+    .retorno-equipo {
+      width: 100%;
+      min-width: 205px;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid rgba(148, 163, 184, .28);
+      border-radius: 9px;
+      background: #161822;
+      color: #e6ecec;
+      font: inherit;
+      font-size: .85rem;
+      color-scheme: dark;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .retorno-equipo:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, .16);
+    }
+
+    .retorno-equipo:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .retorno-ayuda {
+      display: block;
+      margin-top: 6px;
+      font-size: .72rem;
+      color: #9ca3af;
+    }
+
+    .retorno-estado {
+      display: block;
+      min-height: 15px;
+      margin-top: 5px;
+      font-size: .72rem;
+      color: #a5b4fc;
+    }
+
+    .retorno-estado.guardado {
+      color: #86efac;
+    }
+
+    .retorno-estado.error {
+      color: #fca5a5;
+    }
+
+    .btn-borrar-equipo {
+      border-color: rgba(248, 113, 113, .3) !important;
+      color: #fca5a5 !important;
+      white-space: nowrap;
+    }
+
+    .btn-borrar-equipo:hover {
+      background: rgba(239, 68, 68, .12) !important;
+    }
+
+    .modal-rider {
+      position: fixed;
+      inset: 0;
+      z-index: 1001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal-rider.oculto {
+      display: none;
+    }
+
+    .modal-rider__contenido {
+      width: min(760px, 100%);
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 24px;
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 16px;
+      background: #161822;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+    }
+
+    .modal-rider__encabezado {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .modal-rider__icono {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, .15);
+      font-size: 1.4rem;
+    }
+
+    .modal-rider__mensaje {
+      margin: 16px 0 22px;
+      padding: 14px;
+      border: 1px solid rgba(148, 163, 184, .15);
+      border-radius: 10px;
+      background: rgba(148, 163, 184, .05);
+      overflow-wrap: anywhere;
+    }
+
+    .modal-rider__acciones {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn--peligro {
+      border: 1px solid #dc2626;
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn--peligro:hover {
+      background: #b91c1c;
+    }
+
+    .equipo-disponible {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-width: 210px;
+    }
+
+    .equipo-disponible__nombre {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .equipo-disponible__boton {
+      flex-shrink: 0;
+    }
+
+    #modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, .68);
+      backdrop-filter: blur(3px);
+    }
+
+    @media (max-width: 600px) {
+      .modal-rider {
+        padding: 12px;
+      }
+
+      .modal-rider__contenido {
+        padding: 18px;
+      }
+
+      .modal-rider__acciones {
+        flex-direction: column-reverse;
+      }
+
+      .modal-rider__acciones .btn {
+        width: 100%;
+      }
+
+      .tabla th,
+      .tabla td {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+
+    <div class="barra__acciones">
+      <span class="pequeno tenue" style="margin-right: var(--e-3)">
+        Coordinador
+      </span>
+
+      <a
+        class="btn btn--pequeno btn--secundario"
+        id="btn-salir"
+        href="login.html"
+      >
+        Salir
+      </a>
+    </div>
+  </header>
+
+  <main
+    class="contenedor"
+    style="padding-top:var(--e-5); padding-bottom:var(--e-6)"
+  >
+
+    <p class="pequeno tenue mb-0">
+      <a id="volver-evento" href="eventos.html">
+        ‹ Volver al evento
+      </a>
+    </p>
+
+    <p class="pequeno tenue mb-3">
+      Eventos / Hoja de carga
+    </p>
+
+    <!-- CARGANDO -->
+
+    <div id="estado-cargando">
+      <div class="esqueleto esqueleto--titulo"></div>
+      <div class="esqueleto esqueleto--linea"></div>
+      <div class="esqueleto esqueleto--linea" style="width:80%"></div>
+    </div>
+
+    <!-- ERROR -->
+
+    <div class="estado-error oculto" id="estado-error">
+      <p class="estado-error__titulo" id="error-titulo">
+        No pudimos cargar la hoja de carga
+      </p>
+
+      <p class="estado-error__texto" id="error-texto">
+        Revisa tu conexión e inténtalo de nuevo.
+      </p>
+
+      <a class="btn btn--secundario" href="eventos.html">
+        Volver a eventos
+      </a>
+    </div>
+
+    <!-- DATOS DEL EVENTO -->
+
+    <div id="estado-con-datos" class="oculto">
+
+      <div class="encabezado">
+        <div>
+          <h2 id="evento-nombre">Hoja de carga</h2>
+
+          <p class="pequeno tenue mb-0" id="evento-cliente"></p>
+        </div>
+
+        <span class="etiqueta" id="evento-estado"></span>
+      </div>
+
+      <section class="tarjeta mb-5">
+
+        <div class="datos-evento">
+
+          <div class="dato-evento">
+            <p class="pequeno tenue mb-0">Cliente</p>
+            <p class="mb-0" id="dato-cliente">—</p>
+          </div>
+
+          <div class="dato-evento">
+            <p class="pequeno tenue mb-0">Sede</p>
+            <p class="mb-0" id="dato-sede">—</p>
+          </div>
+
+          <div class="dato-evento">
+            <p class="pequeno tenue mb-0">Montaje</p>
+            <p class="mb-0" id="dato-montaje">—</p>
+          </div>
+
+          <div class="dato-evento">
+            <p class="pequeno tenue mb-0">Inicio</p>
+            <p class="mb-0" id="dato-inicio">—</p>
+          </div>
+
+          <div class="dato-evento">
+            <p class="pequeno tenue mb-0">Fin</p>
+            <p class="mb-0" id="dato-fin">—</p>
+          </div>
+
+          <div class="dato-evento">
+            <p class="pequeno tenue mb-0">Contacto</p>
+            <p class="mb-0" id="dato-contacto">—</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- HOJA DE CARGA -->
+
+      <section class="tarjeta">
+
+        <div class="encabezado">
+          <div>
+            <h3 class="tarjeta__titulo mb-0">Hoja de carga</h3>
+
+            <p class="pequeno tenue mb-0" style="margin-top:var(--e-1)">
+              Equipos que serán enviados al evento.
+            </p>
+          </div>
+
+          <div class="fila empujar">
+            <span class="pequeno tenue" id="equipo-conteo">
+              0 equipos
+            </span>
+
+            <button
+              type="button"
+              class="btn btn--pequeno"
+              id="btn-agregar-equipo"
+            >
+              + Agregar equipo
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="aviso aviso--error oculto"
+          id="aviso-error-equipo"
+          role="alert"
+        ></div>
+
+        <!-- ESTADO VACÍO -->
+
+        <div id="estado-sin-equipo" class="oculto">
+          <div class="estado-vacio">
+            <div class="estado-vacio__icono">📦</div>
+
+            <p class="estado-vacio__titulo">
+              No hay equipo asignado
+            </p>
+
+            <p class="estado-vacio__texto">
+              Agrega los equipos que serán enviados a este evento.
+            </p>
+
+            <button
+              type="button"
+              class="btn"
+              id="btn-agregar-primer-equipo"
+            >
+              + Agregar equipo
+            </button>
+          </div>
+        </div>
+
+        <!-- TABLA DE EQUIPOS ASIGNADOS -->
+
+        <div class="tabla-scroll oculto" id="tabla-equipo-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Clave</th>
+                <th>Equipo</th>
+                <th>Condición</th>
+                <th>Salida</th>
+                <th>Retorno programado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+
+            <tbody id="tabla-equipo-body"></tbody>
+          </table>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- MODAL AGREGAR EQUIPO -->
+
+  <div id="modal-equipo" class="modal-rider oculto">
+    <div
+      class="modal-rider__contenido"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-equipo-titulo"
+    >
+      <div class="modal-rider__encabezado">
+        <div>
+          <div class="modal-rider__icono">📦</div>
+
+          <h2 class="tarjeta__titulo mb-0" id="modal-equipo-titulo">
+            Agregar equipo
+          </h2>
+
+          <p class="pequeno tenue mb-0" style="margin-top:8px">
+            Selecciona el equipo que deseas asignar al evento.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn--pequeno btn--secundario"
+          id="btn-cerrar-modal"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="aviso aviso--error oculto" id="modal-error" role="alert"></div>
+
+      <div id="modal-cargando" class="pequeno tenue">
+        Cargando equipos...
+      </div>
+
+      <div class="tabla-scroll oculto" id="modal-tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Clave</th>
+              <th>Equipo</th>
+              <th>Condición</th>
+            </tr>
+          </thead>
+
+          <tbody id="modal-equipo-body"></tbody>
+        </table>
+      </div>
+
+      <div id="modal-vacio" class="estado-vacio oculto">
+        <div class="estado-vacio__icono">📦</div>
+
+        <p class="estado-vacio__titulo">
+          No hay equipos disponibles
+        </p>
+
+        <p class="estado-vacio__texto">
+          Todos los equipos activos ya están asignados a este evento.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR BORRADO -->
+
+  <div
+    id="modal-confirmar-borrado"
+    class="modal-rider oculto"
+    role="presentation"
+  >
+    <div
+      class="modal-rider__contenido"
+      style="max-width:440px"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="borrado-titulo"
+      aria-describedby="borrado-descripcion"
+    >
+      <div class="modal-rider__icono" style="background:rgba(239,68,68,.13)">
+        🗑️
+      </div>
+
+      <h2 class="tarjeta__titulo mb-0" id="borrado-titulo">
+        Quitar equipo del evento
+      </h2>
+
+      <p class="pequeno tenue" style="margin-top:10px">
+        Confirma que deseas quitar este equipo de la hoja de carga.
+      </p>
+
+      <div class="modal-rider__mensaje">
+        <strong id="borrado-nombre-equipo">Equipo seleccionado</strong>
+
+        <p
+          class="pequeno tenue mb-0"
+          id="borrado-descripcion"
+          style="margin-top:6px"
+        >
+          Esta acción eliminará la asignación de este evento, pero no eliminará
+          el equipo del inventario.
+        </p>
+      </div>
+
+      <div
+        class="aviso aviso--error oculto"
+        id="borrado-error"
+        role="alert"
+      ></div>
+
+      <div class="modal-rider__acciones">
+        <button
+          type="button"
+          class="btn btn--secundario"
+          id="btn-cancelar-borrado"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn btn--peligro"
+          id="btn-confirmar-borrado"
+        >
+          Sí, quitar equipo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FONDO COMPARTIDO DE LOS MODALES -->
+
+  <div id="modal-overlay" class="oculto"></div>
+
+  <script type="module" src="/hoja-de-carga.js"></script>
+
+</body>
+</html>
