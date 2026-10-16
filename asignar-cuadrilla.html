@@ -1,0 +1,390 @@
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Asignar cuadrilla</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+
+  <style>
+    .contenido-cuadrilla {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .seccion-cuadrilla {
+      margin-top: var(--e-5);
+      padding: var(--e-5);
+    }
+
+    .formulario-cuadrilla {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--e-4);
+      margin-top: var(--e-4);
+    }
+
+    .campo-cuadrilla {
+      display: flex;
+      flex-direction: column;
+      gap: var(--e-2);
+      min-width: 0;
+    }
+
+    .campo-cuadrilla label {
+      font-weight: 600;
+    }
+
+    .campo-cuadrilla .campo__control {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .ayuda-cuadrilla {
+      margin: var(--e-2) 0 0;
+      line-height: 1.6;
+    }
+
+    .acciones-cuadrilla {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--e-3);
+      margin-top: var(--e-4);
+    }
+
+    .tabla-cuadrilla {
+      margin-top: var(--e-4);
+    }
+
+    .columna-acciones {
+      width: 110px;
+    }
+
+    .modal-fondo {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.72);
+    }
+
+    .modal-fondo.oculto {
+      display: none !important;
+    }
+
+    .modal-cuadrilla {
+      width: 100%;
+      max-width: 440px;
+      padding: 26px;
+      border: 1px solid #343746;
+      border-radius: 14px;
+      background: #161822;
+      color: #e6ecec;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-cuadrilla h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .modal-cuadrilla p {
+      line-height: 1.6;
+    }
+
+    .modal-icono {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      margin-bottom: 16px;
+      border-radius: 12px;
+      background: rgba(239, 68, 68, 0.12);
+      font-size: 23px;
+    }
+
+    .modal-acciones {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn-peligro {
+      border: 1px solid #dc4545;
+      background: #dc4545;
+      color: #fff;
+    }
+
+    .btn-peligro:hover {
+      background: #c93636;
+    }
+
+    .aviso-cuadrilla {
+      margin-top: var(--e-4);
+    }
+
+    @media (max-width: 650px) {
+      .formulario-cuadrilla {
+        grid-template-columns: 1fr;
+      }
+
+      .seccion-cuadrilla {
+        padding: var(--e-3);
+      }
+
+      .acciones-cuadrilla {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .acciones-cuadrilla .btn {
+        width: 100%;
+      }
+
+      .modal-acciones {
+        flex-direction: column-reverse;
+      }
+
+      .modal-acciones .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+
+    <div class="barra__acciones">
+      <span class="pequeno tenue" style="margin-right: var(--e-3)">
+        Coordinador
+      </span>
+
+      <a class="btn btn--pequeno btn--secundario" id="btn-salir" href="login.html">
+        Salir
+      </a>
+    </div>
+  </header>
+
+  <nav class="pestanas" role="tablist">
+    <a class="pestana" role="tab" aria-selected="false" href="index.html">Inicio</a>
+    <a class="pestana" role="tab" aria-selected="false" href="inventario.html">Inventario</a>
+    <a class="pestana" role="tab" aria-selected="true" href="eventos.html">Eventos</a>
+    <a class="pestana" role="tab" aria-selected="false" href="clientes.html">Clientes</a>
+    <a class="pestana" role="tab" aria-selected="false" href="cuadrilla.html">Cuadrilla</a>
+  </nav>
+
+  <main class="contenedor contenido-cuadrilla"
+        style="padding-top: var(--e-5); padding-bottom: var(--e-6)">
+
+    <p class="pequeno tenue mb-0">
+      <a id="enlace-volver" href="eventos.html">‹ Volver al evento</a>
+    </p>
+
+    <p class="pequeno tenue mb-3">Eventos / Asignar cuadrilla</p>
+
+    <!-- CARGANDO -->
+    <div id="estado-cargando">
+      <div class="esqueleto esqueleto--titulo"></div>
+      <div class="esqueleto esqueleto--linea"></div>
+      <div class="esqueleto esqueleto--linea" style="width: 80%"></div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="estado-error oculto" id="estado-error">
+      <p class="estado-error__titulo" id="error-titulo">
+        No pudimos cargar la información
+      </p>
+
+      <p class="estado-error__texto" id="error-texto">
+        Revisa tu conexión e inténtalo de nuevo.
+      </p>
+
+      <button class="btn btn--secundario" id="btn-reintentar" type="button">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- CONTENIDO -->
+    <div id="estado-con-datos" class="oculto">
+
+      <div class="encabezado">
+        <div>
+          <h2>Asignar cuadrilla</h2>
+          <p class="pequeno tenue">
+            Evento: <strong id="evento-nombre">Cargando...</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- FORMULARIO -->
+      <section class="tarjeta seccion-cuadrilla">
+
+        <h3 class="tarjeta__titulo mb-0">Agregar técnico</h3>
+
+        <p class="pequeno tenue">
+          Selecciona un técnico disponible y define su responsabilidad
+          durante el evento.
+        </p>
+
+        <form id="form-asignar">
+
+          <div class="formulario-cuadrilla">
+
+            <div class="campo-cuadrilla">
+              <label for="tecnico-id">Técnico disponible</label>
+
+              <select class="campo__control" id="tecnico-id" name="tecnico_id" required>
+                <option value="">Cargando técnicos...</option>
+              </select>
+
+              <p class="pequeno tenue ayuda-cuadrilla" id="ayuda-tecnicos">
+                Solo aparecen técnicos activos que no estén asignados a otro evento.
+              </p>
+            </div>
+
+            <div class="campo-cuadrilla">
+              <label for="funcion">Función en el evento</label>
+
+              <input
+                class="campo__control"
+                id="funcion"
+                name="funcion"
+                type="text"
+                maxlength="300"
+                placeholder="Ej. Instalación de audio e iluminación"
+                required
+              >
+
+              <p class="pequeno tenue ayuda-cuadrilla">
+                Describe brevemente las tareas que realizará el técnico.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="acciones-cuadrilla">
+            <span class="pequeno tenue">
+              Los cambios se guardarán en el evento seleccionado.
+            </span>
+
+            <button class="btn" id="btn-agregar" type="submit">
+              + Agregar a la cuadrilla
+            </button>
+          </div>
+
+        </form>
+
+        <div class="aviso aviso-cuadrilla oculto" id="aviso-formulario" role="alert">
+          <span id="aviso-formulario-texto"></span>
+        </div>
+
+      </section>
+
+      <!-- CUADRILLA ASIGNADA -->
+      <section class="tarjeta seccion-cuadrilla">
+
+        <div class="encabezado">
+          <div>
+            <h3 class="tarjeta__titulo mb-0">Cuadrilla asignada</h3>
+            <p class="pequeno tenue">
+              Personal y funciones registrados para este evento.
+            </p>
+          </div>
+
+          <span class="etiqueta" id="cuadrilla-conteo">0 técnicos</span>
+        </div>
+
+        <div class="estado-vacio" id="cuadrilla-vacia">
+          <div class="estado-vacio__icono" aria-hidden="true">👷</div>
+
+          <p class="estado-vacio__titulo">Todavía no hay técnicos asignados</p>
+
+          <p class="estado-vacio__texto">
+            Agrega un técnico para comenzar a formar la cuadrilla del evento.
+          </p>
+        </div>
+
+        <div class="tabla-scroll tabla-cuadrilla oculto"
+             id="cuadrilla-tabla-contenedor">
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Técnico</th>
+                <th>Función</th>
+                <th class="columna-acciones">Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody id="cuadrilla-body"></tbody>
+          </table>
+
+        </div>
+
+      </section>
+
+      <div class="fila mt-4">
+        <a class="btn btn--secundario" id="btn-regresar" href="eventos.html">
+          Terminar
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL PARA QUITAR TÉCNICO -->
+  <div
+    class="modal-fondo oculto"
+    id="modal-quitar"
+    role="presentation"
+  >
+    <section
+      class="modal-cuadrilla"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-quitar-titulo"
+      aria-describedby="modal-quitar-texto"
+    >
+      <div class="modal-icono" aria-hidden="true">⚠️</div>
+
+      <h3 id="modal-quitar-titulo">Quitar técnico de la cuadrilla</h3>
+
+      <p id="modal-quitar-texto">
+        ¿Estás seguro de que deseas quitar a este técnico del evento?
+      </p>
+
+      <p class="pequeno tenue">
+        Esta acción eliminará su asignación y lo dejará disponible nuevamente
+        si su cuenta continúa activa y no tiene otras asignaciones.
+      </p>
+
+      <div class="modal-acciones">
+        <button class="btn btn--secundario" id="btn-cancelar-quitar" type="button">
+          Cancelar
+        </button>
+
+        <button class="btn btn-peligro" id="btn-confirmar-quitar" type="button">
+          Sí, quitar técnico
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/asignar-cuadrilla.js"></script>
+
+</body>
+</html>

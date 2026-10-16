@@ -1,6 +1,10 @@
+
 import { supabase } from './supabaseClient.js';
 
-// Referencias HTML
+// =====================================================
+// REFERENCIAS HTML
+// =====================================================
+
 const elCargando = document.getElementById('estado-cargando');
 const elVacio = document.getElementById('estado-vacio');
 const elError = document.getElementById('estado-error');
@@ -14,111 +18,194 @@ const btnReintentar = document.getElementById('btn-reintentar');
 const btnNuevo = document.getElementById('btn-nuevo-tecnico');
 const btnPrimerTecnico = document.getElementById('btn-primer-tecnico');
 
+// =====================================================
+// DATOS
+// =====================================================
+
 let tecnicosCache = [];
+let idsAsignados = new Set();
+
+// =====================================================
+// MOSTRAR ESTADOS
+// =====================================================
 
 function mostrarSoloEstado(nombre) {
-    const toggle = (elemento, mostrar) => {
-        elemento.classList.toggle('oculto', !mostrar);
-    };
+  const toggle = (elemento, mostrar) => {
+    elemento.classList.toggle('oculto', !mostrar);
+  };
 
-    toggle(elCargando, nombre === 'cargando');
-    toggle(elVacio, nombre === 'vacio');
-    toggle(elError, nombre === 'error');
-    toggle(elConDatos, nombre === 'con-datos');
+  toggle(elCargando, nombre === 'cargando');
+  toggle(elVacio, nombre === 'vacio');
+  toggle(elError, nombre === 'error');
+  toggle(elConDatos, nombre === 'con-datos');
 }
 
-function escapeHtml(valor) {
-    const div = document.createElement('div');
-    div.textContent = valor ?? '';
-    return div.innerHTML;
-}
+// =====================================================
+// CREAR FILA
+// =====================================================
 
 function renderFila(tecnico) {
-    const tr = document.createElement('tr');
+  const tr = document.createElement('tr');
 
-    const estado = tecnico.activo
-        ? 'Activo'
-        : 'Inactivo';
+  const ocupado = idsAsignados.has(tecnico.id);
 
-    tr.innerHTML = `
-        <td>${escapeHtml(tecnico.nombre)}</td>
-        <td>${escapeHtml(tecnico.correo ?? '—')}</td>
-        <td>${escapeHtml(tecnico.rol ?? '—')}</td>
-        <td>${escapeHtml(tecnico.telefono ?? '—')}</td>
-        <td>${estado}</td>
-    `;
+  // El técnico aparece inactivo visualmente cuando tiene una
+  // asignación en evento_personal o cuando su cuenta está desactivada.
+  const estaActivo = tecnico.activo === true && !ocupado;
 
-    return tr;
+  const datos = [
+    tecnico.nombre ?? '—',
+    tecnico.correo ?? '—',
+    tecnico.rol ?? '—',
+    tecnico.telefono ?? '—'
+  ];
+
+  datos.forEach((dato) => {
+    const td = document.createElement('td');
+    td.textContent = dato;
+    tr.appendChild(td);
+  });
+
+  const tdEstado = document.createElement('td');
+  const etiquetaEstado = document.createElement('span');
+
+  etiquetaEstado.className = 'etiqueta';
+  etiquetaEstado.textContent = estaActivo ? 'Activo' : 'Inactivo';
+
+  // Reutiliza las clases de estado existentes en ui.css.
+  etiquetaEstado.classList.add(
+    estaActivo ? 'etiqueta--completado' : 'etiqueta--cancelado'
+  );
+
+  if (ocupado) {
+    etiquetaEstado.title = 'Este técnico tiene una asignación registrada.';
+  } else if (tecnico.activo !== true) {
+    etiquetaEstado.title = 'La cuenta de este técnico está desactivada.';
+  }
+
+  tdEstado.appendChild(etiquetaEstado);
+  tr.appendChild(tdEstado);
+
+  return tr;
 }
+
+// =====================================================
+// MOSTRAR LISTA Y BUSCADOR
+// =====================================================
 
 function renderLista(tecnicos) {
-    tbody.innerHTML = '';
+  tbody.replaceChildren();
 
-    tecnicos.forEach((tecnico) => {
-        tbody.appendChild(renderFila(tecnico));
-    });
+  tecnicos.forEach((tecnico) => {
+    tbody.appendChild(renderFila(tecnico));
+  });
 
-    contador.textContent =
-        `${tecnicos.length} resultado${tecnicos.length === 1 ? '' : 's'}`;
+  contador.textContent =
+    `${tecnicos.length} resultado${tecnicos.length === 1 ? '' : 's'}`;
 
-    if (tecnicos.length === 0) {
-        mostrarSoloEstado('vacio');
-    } else {
-        mostrarSoloEstado('con-datos');
-    }
+  mostrarSoloEstado(tecnicos.length === 0 ? 'vacio' : 'con-datos');
 }
+
+function aplicarBusqueda() {
+  const termino = inputBuscar.value.trim().toLowerCase();
+
+  if (!termino) {
+    renderLista(tecnicosCache);
+    return;
+  }
+
+  const filtrados = tecnicosCache.filter((tecnico) => {
+    const nombre = tecnico.nombre?.toLowerCase() ?? '';
+    const correo = tecnico.correo?.toLowerCase() ?? '';
+    const telefono = tecnico.telefono?.toLowerCase() ?? '';
+    const rol = tecnico.rol?.toLowerCase() ?? '';
+
+    const estado = (
+      tecnico.activo === true && !idsAsignados.has(tecnico.id)
+        ? 'activo'
+        : 'inactivo'
+    );
+
+    return (
+      nombre.includes(termino) ||
+      correo.includes(termino) ||
+      telefono.includes(termino) ||
+      rol.includes(termino) ||
+      estado.includes(termino)
+    );
+  });
+
+  renderLista(filtrados);
+}
+
+// =====================================================
+// CARGAR TÉCNICOS Y ASIGNACIONES
+// =====================================================
 
 async function cargarTecnicos() {
-    mostrarSoloEstado('cargando');
+  mostrarSoloEstado('cargando');
 
-    const { data, error } = await supabase
+  try {
+    const [resTecnicos, resAsignaciones] = await Promise.all([
+      supabase
         .from('usuarios')
         .select('id, nombre, correo, rol, telefono, activo')
-        .order('nombre', { ascending: true });
+        .order('nombre', { ascending: true }),
 
-    if (error) {
-        console.error('Error al cargar técnicos:', error);
-        mostrarSoloEstado('error');
-        return;
+      supabase
+        .from('evento_personal')
+        .select('usuario_id')
+    ]);
+
+    if (resTecnicos.error) {
+      throw resTecnicos.error;
     }
 
-    tecnicosCache = data ?? [];
+    if (resAsignaciones.error) {
+      throw resAsignaciones.error;
+    }
 
-    renderLista(tecnicosCache);
+    tecnicosCache = resTecnicos.data ?? [];
+
+    // Un técnico con una o más asignaciones se muestra inactivo.
+    idsAsignados = new Set(
+      (resAsignaciones.data ?? []).map((asignacion) => asignacion.usuario_id)
+    );
+
+    aplicarBusqueda();
+
+  } catch (error) {
+    console.error('Error al cargar técnicos y asignaciones:', error);
+
+    mostrarSoloEstado('error');
+  }
 }
 
-inputBuscar.addEventListener('input', () => {
-    const termino = inputBuscar.value.trim().toLowerCase();
+// =====================================================
+// ACCIONES
+// =====================================================
 
-    if (!termino) {
-        renderLista(tecnicosCache);
-        return;
-    }
-
-    const filtrados = tecnicosCache.filter((tecnico) => {
-        const nombre = tecnico.nombre?.toLowerCase() ?? '';
-        const correo = tecnico.correo?.toLowerCase() ?? '';
-        const telefono = tecnico.telefono?.toLowerCase() ?? '';
-        const rol = tecnico.rol?.toLowerCase() ?? '';
-
-        return (
-            nombre.includes(termino) ||
-            correo.includes(termino) ||
-            telefono.includes(termino) ||
-            rol.includes(termino)
-        );
-    });
-
-    renderLista(filtrados);
-});
+inputBuscar.addEventListener('input', aplicarBusqueda);
 
 function irANuevoTecnico() {
-    window.location.href = '/nuevo-tecnico.html';
+  window.location.href = '/nuevo-tecnico.html';
 }
 
 btnNuevo.addEventListener('click', irANuevoTecnico);
 btnPrimerTecnico.addEventListener('click', irANuevoTecnico);
-
 btnReintentar.addEventListener('click', cargarTecnicos);
+
+// Actualiza la lista cuando el usuario vuelve a esta pestaña.
+window.addEventListener('focus', cargarTecnicos);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    cargarTecnicos();
+  }
+});
+
+// =====================================================
+// INICIO
+// =====================================================
 
 cargarTecnicos();
