@@ -35,12 +35,13 @@ const ETIQUETA_POR_ESTADO = {
 };
 
 // Botones que muestra el diseño de Figma en cada estado.
-// Los que traen `accion` ya están conectados (HU-08: Confirmar). Los demás se
-// dibujan deshabilitados hasta que les toque su historia (HU-12, HU-13, ...).
+// Los que traen `accion` ya están conectados (ver ACCIONES_CONECTADAS más abajo:
+// Confirmar es HU-08, Pasar a montaje es la tarea técnica). Los demás se dibujan
+// deshabilitados hasta que les toque su historia (HU-12, HU-13, ...).
 // Los estados finales (cerrado, cancelado) no tienen acciones.
 const ACCIONES_POR_ESTADO = {
   cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
-  confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Pasar a montaje', clase: '' }],
+  confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
   en_montaje: [{ texto: 'Cerrar evento', clase: '' }],
   cerrado:    [],
   cancelado:  [],
@@ -65,89 +66,129 @@ function celda(texto, clase) {
   return td;
 }
 
-// ── Aviso con el resultado de confirmar (HU-08) ──
-const elAviso = document.getElementById('aviso-confirmacion');
-const elAvisoLista = document.getElementById('aviso-confirmacion-lista');
+// ── Aviso con el resultado de una acción de estado ──
+const elAviso = document.getElementById('aviso-accion');
+const elAvisoLista = document.getElementById('aviso-accion-lista');
 
-function limpiarAvisoConfirmacion() {
+function limpiarAviso() {
   elAviso.className = 'aviso oculto';
   elAvisoLista.innerHTML = '';
 }
 
-// tipo: 'exito' | 'error'. Todo con textContent: los nombres de equipo y de
-// evento los escribe una persona y no deben interpretarse como HTML.
-function mostrarAvisoConfirmacion(tipo, titulo, texto, conflictos = []) {
+// tipo: 'exito' | 'error'. `lineas` es una lista opcional de textos. Todo con
+// textContent: los nombres de equipo y de evento los escribe una persona y no
+// deben interpretarse como HTML.
+function mostrarAviso(tipo, titulo, texto, lineas = []) {
   elAviso.className = `aviso aviso--${tipo} mb-5`;
-  document.getElementById('aviso-confirmacion-titulo').textContent = titulo;
-  document.getElementById('aviso-confirmacion-texto').textContent = texto;
+  document.getElementById('aviso-accion-titulo').textContent = titulo;
+  document.getElementById('aviso-accion-texto').textContent = texto;
   elAvisoLista.innerHTML = '';
 
-  conflictos.forEach((c) => {
-    const estado = ETIQUETA_POR_ESTADO[c.evento_estado]?.texto ?? c.evento_estado;
+  lineas.forEach((linea) => {
     const li = document.createElement('li');
-    li.textContent =
-      `${c.equipo_clave} · ${c.equipo_nombre} — ya está en «${c.evento_nombre}» ` +
-      `(${estado}), del ${formatearFecha(c.fecha_montaje)} al ${formatearFecha(c.fecha_fin)}`;
+    li.textContent = linea;
     elAvisoLista.appendChild(li);
   });
 }
 
-// La confirmación NO es un UPDATE desde el navegador: se llama a la función
-// confirmar_evento del servidor, que revisa el traslape y cambia el estado en
-// la misma transacción (hu08_confirmar_evento.sql). Lo que el navegador "sabía"
-// al cargar la pantalla no cuenta; manda lo que responda el servidor.
-async function confirmarEvento(boton, eventoId) {
-  limpiarAvisoConfirmacion();
-  const textoOriginal = boton.textContent;
-  boton.disabled = true;
-  boton.textContent = 'Confirmando…';
+// Acciones de estado ya conectadas al servidor. Ninguna es un UPDATE desde el
+// navegador: cada una llama a una función de Postgres que revisa las reglas y
+// cambia el estado en la misma transacción. Lo que el navegador "sabía" al
+// cargar la pantalla no cuenta; manda lo que responda el servidor.
+//   · rpc:       función del servidor.
+//   · enCurso:   texto del botón mientras espera.
+//   · fallo:     título del aviso si no se pudo (red, rechazo sin detalle).
+//   · exito:     (data) => { titulo, texto } cuando el servidor dice ok.
+//   · rechazos:  código que devuelve el servidor => (data) => { titulo, texto, lineas }.
+//   Un rechazo con `estado_invalido` recarga la pantalla (alguien más cambió el
+//   estado mientras estaba abierta) y no necesita entrada aquí.
+const ACCIONES_CONECTADAS = {
+  // HU-08 · hu08_confirmar_evento.sql
+  confirmar: {
+    rpc: 'confirmar_evento',
+    enCurso: 'Confirmando…',
+    fallo: 'No se pudo confirmar el evento.',
+    exito: (d) => ({
+      titulo: 'Evento confirmado.',
+      texto: d.piezas === 0
+        ? 'Todavía no tiene equipo en su hoja de carga, así que por ahora no aparta ninguna pieza.'
+        : `Sus ${d.piezas} pieza${d.piezas === 1 ? '' : 's'} quedan apartadas para estas fechas.`,
+    }),
+    rechazos: {
+      traslape: (d) => ({
+        titulo: 'No se puede confirmar: hay equipo comprometido en fechas que se cruzan.',
+        texto: 'Quita estas piezas de la hoja de carga o cambia las fechas del evento:',
+        lineas: (d.conflictos ?? []).map((c) => {
+          const estado = ETIQUETA_POR_ESTADO[c.evento_estado]?.texto ?? c.evento_estado;
+          return `${c.equipo_clave} · ${c.equipo_nombre} — ya está en «${c.evento_nombre}» ` +
+                 `(${estado}), del ${formatearFecha(c.fecha_montaje)} al ${formatearFecha(c.fecha_fin)}`;
+        }),
+      }),
+    },
+  },
 
-  const { data, error } = await supabase.rpc('confirmar_evento', { p_evento_id: eventoId });
+  // Tarea técnica · tarea_pasar_a_montaje.sql
+  montaje: {
+    rpc: 'pasar_a_montaje',
+    enCurso: 'Pasando a montaje…',
+    fallo: 'No se pudo pasar el evento a montaje.',
+    exito: (d) => ({
+      titulo: 'Evento en montaje.',
+      texto: `${d.piezas} pieza${d.piezas === 1 ? '' : 's'} y ${d.tecnicos} técnico${d.tecnicos === 1 ? '' : 's'} asignados. La hoja de carga ya no se edita.`,
+    }),
+    rechazos: {
+      faltan_asignaciones: (d) => ({
+        titulo: 'No se puede pasar a montaje: faltan asignaciones.',
+        texto: 'Un evento no pasa a montaje sin equipo y cuadrilla asignados. Falta:',
+        lineas: (d.faltan ?? []).map((f) =>
+          f === 'equipo' ? 'Equipo: arma la hoja de carga con el botón + de «Equipo asignado».'
+                         : 'Cuadrilla: asigna al menos un técnico con el botón + de «Cuadrilla asignada».'),
+      }),
+    },
+  },
+};
+
+async function ejecutarAccion(boton, eventoId, clave) {
+  const accion = ACCIONES_CONECTADAS[clave];
+  limpiarAviso();
+  const textoOriginal = boton.textContent;
+  const rehabilitar = () => { boton.disabled = false; boton.textContent = textoOriginal; };
+  boton.disabled = true;
+  boton.textContent = accion.enCurso;
+
+  const { data, error } = await supabase.rpc(accion.rpc, { p_evento_id: eventoId });
 
   if (error) {
-    console.error('Error al confirmar el evento:', error);
-    mostrarAvisoConfirmacion('error', 'No se pudo confirmar el evento.', 'Revisa tu conexión e inténtalo de nuevo.');
-    boton.disabled = false;
-    boton.textContent = textoOriginal;
+    console.error(`Error en ${accion.rpc}:`, error);
+    mostrarAviso('error', accion.fallo, 'Revisa tu conexión e inténtalo de nuevo.');
+    rehabilitar();
     return;
   }
 
   if (data.ok) {
-    await cargarDetalle(); // redibuja el estado y los botones del evento ya confirmado
-    mostrarAvisoConfirmacion(
-      'exito',
-      'Evento confirmado.',
-      data.piezas === 0
-        ? 'Todavía no tiene equipo en su hoja de carga, así que por ahora no aparta ninguna pieza.'
-        : `Sus ${data.piezas} pieza${data.piezas === 1 ? '' : 's'} quedan apartadas para estas fechas.`
-    );
+    await cargarDetalle(); // redibuja el estado y los botones del nuevo estado
+    const { titulo, texto } = accion.exito(data);
+    mostrarAviso('exito', titulo, texto);
     return;
   }
 
   // El servidor lo rechazó.
-  if (data.codigo === 'traslape') {
-    mostrarAvisoConfirmacion(
-      'error',
-      'No se puede confirmar: hay equipo comprometido en fechas que se cruzan.',
-      'Quita estas piezas de la hoja de carga o cambia las fechas del evento:',
-      data.conflictos ?? []
-    );
-    boton.disabled = false;
-    boton.textContent = textoOriginal;
-    return;
-  }
-
   if (data.codigo === 'estado_invalido') {
     // Alguien más lo cambió mientras esta pantalla estaba abierta: se recarga
     // para mostrar el estado real.
     await cargarDetalle();
-    mostrarAvisoConfirmacion('error', 'No se pudo confirmar.', data.mensaje);
+    mostrarAviso('error', accion.fallo, data.mensaje);
     return;
   }
 
-  mostrarAvisoConfirmacion('error', 'No se pudo confirmar.', data.mensaje ?? 'Inténtalo de nuevo.');
-  boton.disabled = false;
-  boton.textContent = textoOriginal;
+  const rechazo = accion.rechazos[data.codigo];
+  if (rechazo) {
+    const { titulo, texto, lineas } = rechazo(data);
+    mostrarAviso('error', titulo, texto, lineas);
+  } else {
+    mostrarAviso('error', accion.fallo, data.mensaje ?? 'Inténtalo de nuevo.');
+  }
+  rehabilitar();
 }
 
 function pintarAcciones(estado, eventoId) {
@@ -171,8 +212,8 @@ function pintarAcciones(estado, eventoId) {
     boton.className = `btn ${clase}`.trim();
     boton.textContent = texto;
 
-    if (accion === 'confirmar') {
-      boton.addEventListener('click', () => confirmarEvento(boton, eventoId));
+    if (ACCIONES_CONECTADAS[accion]) {
+      boton.addEventListener('click', () => ejecutarAccion(boton, eventoId, accion));
     } else {
       boton.disabled = true; // todavía sin conectar (su historia es de otro sprint)
     }
@@ -254,7 +295,7 @@ async function cargarDetalle() {
   }
 
   mostrarSoloEstado('cargando');
-  limpiarAvisoConfirmacion();
+  limpiarAviso();
 
   // Las tres consultas son independientes: se piden al mismo tiempo.
   const [resEvento, resEquipo, resCuadrilla] = await Promise.all([
