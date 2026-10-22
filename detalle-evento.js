@@ -1,193 +1,340 @@
 import { supabase } from './supabaseClient.js';
+import { exigirRol } from './guardia.js';
 
-conectarBotonSalir();
+// Pantalla del coordinador. Sin sesión va al login; un técnico es enviado
+// a su propio diseño (móvil) y el resto de este archivo no corre.
+await exigirRol('coordinador');
 
+const elCargando = document.getElementById('estado-cargando');
+const elError = document.getElementById('estado-error');
+const elConDatos = document.getElementById('estado-con-datos');
 
-const form          = document.getElementById('form-nuevo-evento');
-const selectCliente  = document.getElementById('cliente_id');
-const btnGuardar     = document.getElementById('btn-guardar');
-const btnCancelar    = document.getElementById('btn-cancelar');
-const avisoError     = document.getElementById('aviso-error');
-const avisoErrorTexto = document.getElementById('aviso-error-texto');
+// ── Cerrar sesión (mismo bloque que en eventos.js) ──
+document.getElementById('btn-salir')?.addEventListener('click', async (evento) => {
+  evento.preventDefault();
+  await supabase.auth.signOut();
+  window.location.href = '/login.html';
+});
 
-// ── 1 · Llenar el <select> de clientes desde Supabase ──
-async function cargarClientes() {
-  const { data, error } = await supabase
-    .from('clientes')
-    .select('id, nombre')
-    .order('nombre', { ascending: true });
+// Se usa la clase .oculto (display:none !important) y NO el atributo
+// `hidden`: en ui.css varias clases traen display fijo y anulan `hidden`.
+function mostrarSoloEstado(nombre) {
+  elCargando.classList.toggle('oculto', nombre !== 'cargando');
+  elError.classList.toggle('oculto', nombre !== 'error');
+  elConDatos.classList.toggle('oculto', nombre !== 'con-datos');
+}
+
+function mostrarError(titulo, texto) {
+  document.getElementById('error-titulo').textContent = titulo;
+  document.getElementById('error-texto').textContent = texto;
+  mostrarSoloEstado('error');
+}
+
+// Mismo mapeo de colores que en eventos.js (ui.css solo trae 4 etiquetas).
+const ETIQUETA_POR_ESTADO = {
+  cotizado:   { clase: 'etiqueta--pendiente',  texto: 'Cotizado' },
+  confirmado: { clase: 'etiqueta--completado', texto: 'Confirmado' },
+  en_montaje: { clase: 'etiqueta--proceso',    texto: 'En montaje' },
+  cerrado:    { clase: 'etiqueta--proceso',    texto: 'Cerrado' },
+  cancelado:  { clase: 'etiqueta--cancelado',  texto: 'Cancelado' },
+};
+
+// Botones que muestra el diseño de Figma en cada estado.
+// Los que traen `accion` ya están conectados (ver ACCIONES_CONECTADAS más abajo:
+// Confirmar es HU-08, Pasar a montaje es la tarea técnica). Los demás se dibujan
+// deshabilitados hasta que les toque su historia (HU-12, HU-13, ...).
+// Los estados finales (cerrado, cancelado) no tienen acciones.
+const ACCIONES_POR_ESTADO = {
+  cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
+  confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
+  en_montaje: [{ texto: 'Cerrar evento', clase: '' }],
+  cerrado:    [],
+  cancelado:  [],
+};
+
+// Regla de HU-06: la hoja de carga se edita mientras el evento no esté en montaje.
+const ESTADOS_EDITABLES = ['cotizado', 'confirmado'];
+
+function formatearFecha(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('es-MX', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+// Se arma con textContent (no innerHTML): estos textos los escribe una
+// persona en un formulario y no deben interpretarse como HTML.
+function celda(texto, clase) {
+  const td = document.createElement('td');
+  td.textContent = texto ?? '—';
+  if (clase) td.className = clase;
+  return td;
+}
+
+// ── Aviso con el resultado de una acción de estado ──
+const elAviso = document.getElementById('aviso-accion');
+const elAvisoLista = document.getElementById('aviso-accion-lista');
+
+function limpiarAviso() {
+  elAviso.className = 'aviso oculto';
+  elAvisoLista.innerHTML = '';
+}
+
+// tipo: 'exito' | 'error'. `lineas` es una lista opcional de textos. Todo con
+// textContent: los nombres de equipo y de evento los escribe una persona y no
+// deben interpretarse como HTML.
+function mostrarAviso(tipo, titulo, texto, lineas = []) {
+  elAviso.className = `aviso aviso--${tipo} mb-5`;
+  document.getElementById('aviso-accion-titulo').textContent = titulo;
+  document.getElementById('aviso-accion-texto').textContent = texto;
+  elAvisoLista.innerHTML = '';
+
+  lineas.forEach((linea) => {
+    const li = document.createElement('li');
+    li.textContent = linea;
+    elAvisoLista.appendChild(li);
+  });
+}
+
+// Acciones de estado ya conectadas al servidor. Ninguna es un UPDATE desde el
+// navegador: cada una llama a una función de Postgres que revisa las reglas y
+// cambia el estado en la misma transacción. Lo que el navegador "sabía" al
+// cargar la pantalla no cuenta; manda lo que responda el servidor.
+//   · rpc:       función del servidor.
+//   · enCurso:   texto del botón mientras espera.
+//   · fallo:     título del aviso si no se pudo (red, rechazo sin detalle).
+//   · exito:     (data) => { titulo, texto } cuando el servidor dice ok.
+//   · rechazos:  código que devuelve el servidor => (data) => { titulo, texto, lineas }.
+//   Un rechazo con `estado_invalido` recarga la pantalla (alguien más cambió el
+//   estado mientras estaba abierta) y no necesita entrada aquí.
+const ACCIONES_CONECTADAS = {
+  // HU-08 · hu08_confirmar_evento.sql
+  confirmar: {
+    rpc: 'confirmar_evento',
+    enCurso: 'Confirmando…',
+    fallo: 'No se pudo confirmar el evento.',
+    exito: (d) => ({
+      titulo: 'Evento confirmado.',
+      texto: d.piezas === 0
+        ? 'Todavía no tiene equipo en su hoja de carga, así que por ahora no aparta ninguna pieza.'
+        : `Sus ${d.piezas} pieza${d.piezas === 1 ? '' : 's'} quedan apartadas para estas fechas.`,
+    }),
+    rechazos: {
+      traslape: (d) => ({
+        titulo: 'No se puede confirmar: hay equipo comprometido en fechas que se cruzan.',
+        texto: 'Quita estas piezas de la hoja de carga o cambia las fechas del evento:',
+        lineas: (d.conflictos ?? []).map((c) => {
+          const estado = ETIQUETA_POR_ESTADO[c.evento_estado]?.texto ?? c.evento_estado;
+          return `${c.equipo_clave} · ${c.equipo_nombre} — ya está en «${c.evento_nombre}» ` +
+                 `(${estado}), del ${formatearFecha(c.fecha_montaje)} al ${formatearFecha(c.fecha_fin)}`;
+        }),
+      }),
+    },
+  },
+
+  // Tarea técnica · tarea_pasar_a_montaje.sql
+  montaje: {
+    rpc: 'pasar_a_montaje',
+    enCurso: 'Pasando a montaje…',
+    fallo: 'No se pudo pasar el evento a montaje.',
+    exito: (d) => ({
+      titulo: 'Evento en montaje.',
+      texto: `${d.piezas} pieza${d.piezas === 1 ? '' : 's'} y ${d.tecnicos} técnico${d.tecnicos === 1 ? '' : 's'} asignados. La hoja de carga ya no se edita.`,
+    }),
+    rechazos: {
+      faltan_asignaciones: (d) => ({
+        titulo: 'No se puede pasar a montaje: faltan asignaciones.',
+        texto: 'Un evento no pasa a montaje sin equipo y cuadrilla asignados. Falta:',
+        lineas: (d.faltan ?? []).map((f) =>
+          f === 'equipo' ? 'Equipo: arma la hoja de carga con el botón + de «Equipo asignado».'
+                         : 'Cuadrilla: asigna al menos un técnico con el botón + de «Cuadrilla asignada».'),
+      }),
+    },
+  },
+};
+
+async function ejecutarAccion(boton, eventoId, clave) {
+  const accion = ACCIONES_CONECTADAS[clave];
+  limpiarAviso();
+  const textoOriginal = boton.textContent;
+  const rehabilitar = () => { boton.disabled = false; boton.textContent = textoOriginal; };
+  boton.disabled = true;
+  boton.textContent = accion.enCurso;
+
+  const { data, error } = await supabase.rpc(accion.rpc, { p_evento_id: eventoId });
 
   if (error) {
-    console.error('Error al cargar clientes:', error);
-    mostrarAvisoError('No se pudo cargar la lista de clientes. Recarga la página.');
+    console.error(`Error en ${accion.rpc}:`, error);
+    mostrarAviso('error', accion.fallo, 'Revisa tu conexión e inténtalo de nuevo.');
+    rehabilitar();
     return;
   }
 
-  data.forEach((cliente) => {
-    const option = document.createElement('option');
-    option.value = cliente.id;
-    option.textContent = cliente.nombre;
-    selectCliente.appendChild(option);
+  if (data.ok) {
+    await cargarDetalle(); // redibuja el estado y los botones del nuevo estado
+    const { titulo, texto } = accion.exito(data);
+    mostrarAviso('exito', titulo, texto);
+    return;
+  }
+
+  // El servidor lo rechazó.
+  if (data.codigo === 'estado_invalido') {
+    // Alguien más lo cambió mientras esta pantalla estaba abierta: se recarga
+    // para mostrar el estado real.
+    await cargarDetalle();
+    mostrarAviso('error', accion.fallo, data.mensaje);
+    return;
+  }
+
+  const rechazo = accion.rechazos[data.codigo];
+  if (rechazo) {
+    const { titulo, texto, lineas } = rechazo(data);
+    mostrarAviso('error', titulo, texto, lineas);
+  } else {
+    mostrarAviso('error', accion.fallo, data.mensaje ?? 'Inténtalo de nuevo.');
+  }
+  rehabilitar();
+}
+
+function pintarAcciones(estado, eventoId) {
+  const contenedor = document.getElementById('acciones-estado');
+  contenedor.innerHTML = '';
+
+  const acciones = ACCIONES_POR_ESTADO[estado];
+  if (!acciones) return; // estado desconocido: no se dibuja nada
+
+  if (acciones.length === 0) {
+    const nota = document.createElement('span');
+    nota.className = 'pequeno tenue';
+    nota.textContent = 'Estado final — ya no admite cambios';
+    contenedor.appendChild(nota);
+    return;
+  }
+
+  acciones.forEach(({ texto, clase, accion }) => {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = `btn ${clase}`.trim();
+    boton.textContent = texto;
+
+    if (ACCIONES_CONECTADAS[accion]) {
+      boton.addEventListener('click', () => ejecutarAccion(boton, eventoId, accion));
+    } else {
+      boton.disabled = true; // todavía sin conectar (su historia es de otro sprint)
+    }
+    contenedor.appendChild(boton);
   });
 }
 
-// ── 2 · Validación antes de enviar (RNF-03: validar antes de enviar) ──
-// Nota: .campo__error y .aviso en ui.css traen "display" fijo, lo que
-// anula el atributo `hidden` de HTML. Por eso usamos la clase utilitaria
-// .oculto (display:none !important) que la propia hoja de estilos ya
-// trae para estos casos, en vez de `hidden`.
-function limpiarErrores() {
-  form.querySelectorAll('.campo').forEach((campo) => {
-    campo.classList.remove('campo--error');
+function pintarEvento(evento) {
+  document.getElementById('evento-nombre').textContent = evento.nombre;
+
+  const info = ETIQUETA_POR_ESTADO[evento.estado] ?? { clase: '', texto: evento.estado };
+  const etiqueta = document.getElementById('evento-estado');
+  etiqueta.className = `etiqueta ${info.clase}`;
+  etiqueta.textContent = info.texto;
+
+  pintarAcciones(evento.estado, evento.id);
+
+  document.getElementById('dato-cliente').textContent = evento.clientes?.nombre ?? '—';
+  document.getElementById('dato-sede').textContent = evento.sede ?? '—';
+  document.getElementById('dato-montaje').textContent = formatearFecha(evento.fecha_montaje);
+  document.getElementById('dato-inicio').textContent = formatearFecha(evento.fecha_inicio);
+  document.getElementById('dato-fin').textContent = formatearFecha(evento.fecha_fin);
+  document.getElementById('dato-contacto').textContent = evento.clientes?.contacto || '—';
+
+  if (evento.estado === 'cancelado') {
+    document.getElementById('dato-motivo').textContent = evento.motivo_cancelacion || 'Sin motivo registrado';
+    document.getElementById('aviso-cancelacion').classList.remove('oculto');
+  }
+
+  // Enlaces a las páginas de Emiliano; reciben el id del evento por la URL.
+  const editable = ESTADOS_EDITABLES.includes(evento.estado);
+  const id = encodeURIComponent(evento.id);
+
+  const enlaceHoja = document.getElementById('enlace-hoja-carga');
+  enlaceHoja.href = `hoja-de-carga.html?evento_id=${id}`;
+  enlaceHoja.classList.toggle('oculto', !editable);
+
+  const enlaceCuadrilla = document.getElementById('enlace-cuadrilla');
+  enlaceCuadrilla.href = `asignar-cuadrilla.html?evento_id=${id}`;
+  enlaceCuadrilla.classList.toggle('oculto', !editable);
+}
+
+function pintarEquipo(filas) {
+  const body = document.getElementById('equipo-body');
+  body.innerHTML = '';
+  filas.forEach((fila) => {
+    const tr = document.createElement('tr');
+    tr.appendChild(celda(fila.equipos?.clave, 'mono'));
+    tr.appendChild(celda(fila.equipos?.nombre));
+    tr.appendChild(celda(fila.equipos?.categorias?.nombre));
+    body.appendChild(tr);
   });
-  form.querySelectorAll('.campo__error').forEach((span) => {
-    span.classList.add('oculto');
-    // Si un error anterior cambió el texto, se devuelve el del HTML
-    if (span.dataset.original) span.textContent = span.dataset.original;
+  document.getElementById('equipo-conteo').textContent =
+    `${filas.length} pieza${filas.length === 1 ? '' : 's'}`;
+  document.getElementById('equipo-vacio').classList.toggle('oculto', filas.length > 0);
+  document.getElementById('equipo-tabla-contenedor').classList.toggle('oculto', filas.length === 0);
+}
+
+function pintarCuadrilla(filas) {
+  const body = document.getElementById('cuadrilla-body');
+  body.innerHTML = '';
+  filas.forEach((fila) => {
+    const tr = document.createElement('tr');
+    tr.appendChild(celda(fila.usuarios?.nombre));
+    tr.appendChild(celda(fila.funcion));
+    body.appendChild(tr);
   });
+  document.getElementById('cuadrilla-conteo').textContent =
+    `${filas.length} técnico${filas.length === 1 ? '' : 's'}`;
+  document.getElementById('cuadrilla-vacia').classList.toggle('oculto', filas.length > 0);
+  document.getElementById('cuadrilla-tabla-contenedor').classList.toggle('oculto', filas.length === 0);
 }
 
-// mensaje es opcional: sin él se queda el texto que ya trae el HTML
-function marcarError(inputId, mensaje) {
-  const input = document.getElementById(inputId);
-  const campo = input.closest('.campo');
-  campo.classList.add('campo--error');
-  const span = campo.querySelector('.campo__error');
-  if (mensaje) {
-    span.dataset.original ??= span.textContent;
-    span.textContent = mensaje;
-  }
-  span.classList.remove('oculto');
-}
-
-// ── Fechas pasadas ──
-// El valor de un <input type="datetime-local"> es hora local, sin zona:
-// "2026-10-21T18:30". Así se arma el "ahora" en ese mismo formato.
-function ahoraParaInput() {
-  const ahora = new Date();
-  ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
-  return ahora.toISOString().slice(0, 16);
-}
-
-// Las tres fechas arrancan en "ahora": el selector del navegador deja
-// sin elegir los días anteriores. Es una ayuda; la validación de verdad
-// está en validarFormulario (y en el servidor), porque el campo también
-// se puede escribir a mano.
-function limitarFechasPasadas() {
-  const minimo = ahoraParaInput();
-  ['fecha_montaje', 'fecha_inicio', 'fecha_fin'].forEach((id) => {
-    document.getElementById(id).min = minimo;
-  });
-}
-
-function validarFormulario(datos) {
-  limpiarErrores();
-  let esValido = true;
-
-  const camposObligatorios = ['nombre', 'cliente_id', 'sede', 'fecha_montaje', 'fecha_inicio', 'fecha_fin'];
-  for (const campo of camposObligatorios) {
-    if (!datos[campo]) {
-      marcarError(campo);
-      esValido = false;
-    }
+async function cargarDetalle() {
+  const eventoId = new URLSearchParams(window.location.search).get('id');
+  if (!eventoId) {
+    mostrarError('Falta el evento', 'Abre esta página desde el listado de eventos.');
+    return;
   }
 
-  // No se crean eventos con fecha pasada. Basta revisar el montaje: es la
-  // más temprana, y abajo se exige montaje ≤ inicio ≤ fin.
-  if (datos.fecha_montaje) {
-    const ahora = new Date();
-    ahora.setSeconds(0, 0);   // el campo no trae segundos: se compara por minuto
-    if (new Date(datos.fecha_montaje) < ahora) {
-      marcarError('fecha_montaje', 'La fecha de montaje no puede estar en el pasado.');
-      esValido = false;
-    }
+  mostrarSoloEstado('cargando');
+  limpiarAviso();
+
+  // Las tres consultas son independientes: se piden al mismo tiempo.
+  const [resEvento, resEquipo, resCuadrilla] = await Promise.all([
+    supabase
+      .from('eventos')
+      .select('id, nombre, sede, fecha_montaje, fecha_inicio, fecha_fin, estado, motivo_cancelacion, clientes(nombre, contacto)')
+      .eq('id', eventoId)
+      .maybeSingle(),
+    supabase
+      .from('evento_equipo')
+      .select('id, equipos(clave, nombre, categorias(nombre))')
+      .eq('evento_id', eventoId),
+    supabase
+      .from('evento_personal')
+      .select('id, funcion, usuarios(nombre)')
+      .eq('evento_id', eventoId),
+  ]);
+
+  if (resEvento.error || resEquipo.error || resCuadrilla.error) {
+    console.error('Error al cargar el detalle:', resEvento.error, resEquipo.error, resCuadrilla.error);
+    mostrarError('No pudimos cargar el evento', 'Revisa tu conexión e inténtalo de nuevo.');
+    return;
   }
 
-  // Regla de la sección 10: montaje ≤ inicio ≤ fin, sin margen
-  if (datos.fecha_montaje && datos.fecha_inicio && datos.fecha_fin) {
-    const montaje = new Date(datos.fecha_montaje);
-    const inicio  = new Date(datos.fecha_inicio);
-    const fin     = new Date(datos.fecha_fin);
-
-    if (!(montaje <= inicio && inicio <= fin)) {
-      marcarError('fecha_fin');
-      esValido = false;
-    }
+  // Con RLS activo, sin sesión la consulta no falla: regresa vacío.
+  if (!resEvento.data) {
+    mostrarError('No encontramos este evento', 'Puede que no exista, o que no hayas iniciado sesión.');
+    return;
   }
 
-  return esValido;
+  pintarEvento(resEvento.data);
+  pintarEquipo(resEquipo.data ?? []);
+  pintarCuadrilla(resCuadrilla.data ?? []);
+  mostrarSoloEstado('con-datos');
 }
 
-// ── 3 · Manejo de errores generales (red, servidor) ──
-function mostrarAvisoError(mensaje) {
-  avisoErrorTexto.textContent = mensaje;
-  avisoError.classList.remove('oculto');
-}
-function ocultarAvisoError() {
-  avisoError.classList.add('oculto');
-}
-
-// ── 4 · Envío del formulario ──
-form.addEventListener('submit', async (evento) => {
-  evento.preventDefault();
-  ocultarAvisoError();
-
-  const formData = new FormData(form);
-  const datos = Object.fromEntries(formData.entries());
-
-  if (!validarFormulario(datos)) {
-    return; // Nada se envía si la validación del cliente falla
-  }
-
-  btnGuardar.disabled = true;
-  btnGuardar.textContent = 'Guardando…';
-
-  try {
-    const { error } = await supabase.from('eventos').insert({
-      nombre: datos.nombre,
-      cliente_id: datos.cliente_id,
-      sede: datos.sede,
-      direccion: datos.direccion || null,
-      fecha_montaje: datos.fecha_montaje,
-      fecha_inicio: datos.fecha_inicio,
-      fecha_fin: datos.fecha_fin,
-      notas: datos.notas || null,
-      // estado no se manda: la tabla ya lo pone en 'cotizado' por default
-    });
-
-    if (error) {
-      // Puede ser una violación de restricción del servidor (ej. la
-      // regla fechas_en_orden) o un problema de red — cualquiera de
-      // los dos cae aquí, nunca se pierde en silencio.
-      throw error;
-    }
-
-    // Éxito: regresamos al listado
-    window.location.href = '/eventos.html';
-
-  } catch (error) {
-    console.error('Error al guardar el evento:', error);
-    // El servidor también rechaza fechas pasadas (trigger de defecto_fechas_pasadas.sql)
-    const esFechaPasada = error?.hint === 'fecha_pasada';
-    mostrarAvisoError(
-      esFechaPasada
-        ? 'La fecha de montaje no puede estar en el pasado. Corrígela e inténtalo de nuevo.'
-        : error?.message?.includes('fetch')
-          ? 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.'
-          : 'No se pudo guardar el evento. Inténtalo de nuevo.'
-    );
-    btnGuardar.disabled = false;
-    btnGuardar.textContent = 'Guardar evento';
-  }
-});
-
-btnCancelar.addEventListener('click', () => {
-  window.location.href = '/eventos.html';
-});
-
-// El HTML trae estos spans con `hidden`, pero esa clase de ui.css
-// anula el atributo — los ocultamos también por JS al cargar.
-limpiarErrores();
-limitarFechasPasadas();
-
-cargarClientes();
+cargarDetalle();
