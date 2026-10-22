@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js';
+import { obtenerPerfil, rutaInicioPorRol } from './guardia.js';
 
 const form = document.getElementById('form-login');
 const inputCorreo = document.getElementById('correo');
@@ -7,10 +8,10 @@ const btnEntrar = document.getElementById('btn-entrar');
 const avisoError = document.getElementById('aviso-error');
 const avisoErrorTexto = document.getElementById('aviso-error-texto');
 
-// ── Si ya hay sesión activa, no tiene caso ver el login de nuevo ──
-const { data: sesionActual } = await supabase.auth.getSession();
-if (sesionActual.session) {
-  window.location.href = '/index.html';
+
+const perfilActual = await obtenerPerfil();
+if (perfilActual) {
+  window.location.replace(rutaInicioPorRol(perfilActual.rol));
 }
 
 // ── Validación de campos (mismo patrón que nuevo-evento.js) ──
@@ -67,11 +68,13 @@ form.addEventListener('submit', async (evento) => {
     //     en la tabla usuarios (la que sí conoce coordinador/técnico).
     const { data: perfil, error: errorPerfil } = await supabase
       .from('usuarios')
-      .select('id, nombre, rol, activo')
+      .select('id, nombre, rol, activo, auth_user_id')
       .eq('auth_user_id', data.user.id)
       .single();
 
     if (errorPerfil || !perfil) {
+
+      await supabase.auth.signOut();
       throw new Error(
         'Tu cuenta existe pero no está ligada a ningún perfil en el sistema. Avisa al coordinador.'
       );
@@ -83,12 +86,11 @@ form.addEventListener('submit', async (evento) => {
     }
 
     // 3 · Guardamos el perfil para que otras pantallas lo consulten
-    //     sin tener que volver a hacer esta consulta cada vez.
-    //     Esto es solo conveniencia de interfaz — la seguridad real
-    //     la da RLS en el servidor, no lo que guardemos aquí.
+
     sessionStorage.setItem('rider_perfil', JSON.stringify(perfil));
 
-    window.location.href = '/index.html';
+    // 4 · Cada rol entra a su propio diseño.
+    window.location.href = rutaInicioPorRol(perfil.rol);
 
   } catch (error) {
     console.error('Error al iniciar sesión:', error);

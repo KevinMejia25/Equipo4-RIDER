@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Mis eventos</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+<body>
+
+  <!-- Aviso de "sin conexión": se muestra cuando <body> lleva la clase
+       sin-conexion. Todavía nadie la pone; la activará la parte PWA. -->
+  <div class="franja-offline" role="status">Sin conexión: se muestran los datos guardados</div>
+
+  <header style="display:flex; align-items:center; justify-content:space-between; gap:var(--e-3);
+                 min-height:64px; padding:0 var(--e-4); border-bottom:1px solid var(--color-borde)">
+    <div style="display:flex; align-items:center; gap:var(--e-3); min-width:0">
+      <span aria-hidden="true"
+            style="width:32px; height:32px; flex:none; border-radius:var(--radio);
+                   background:var(--color-marca); display:grid; place-items:center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.248-3.062A.5.5 0 0 1 22 7.87v8.196"/>
+          <path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/>
+          <path d="m2 2 20 20"/>
+        </svg>
+      </span>
+      <div style="min-width:0">
+        <p class="mb-0" style="font-weight:700; font-size:var(--t-sm); line-height:1.2">RIDER</p>
+        <p class="pequeno tenue mb-0" style="line-height:1.2">Técnico de campo</p>
+      </div>
+    </div>
+    <a class="btn btn--fantasma" id="btn-salir" href="login.html" style="color:var(--color-texto-suave)">Salir</a>
+  </header>
+
+  <main style="padding:var(--e-4) var(--e-4) var(--e-6)">
+
+    <h1 style="margin-bottom:var(--e-1)">Mis eventos</h1>
+    <p class="pequeno tenue mb-3" id="resumen">&nbsp;</p>
+
+    <!-- ═══ ESTADO: cargando ═══ -->
+    <div id="estado-cargando" aria-hidden="true">
+      <div class="esqueleto esqueleto--tarjeta" style="margin-bottom:var(--e-3)"></div>
+      <div class="esqueleto esqueleto--tarjeta" style="margin-bottom:var(--e-3)"></div>
+      <div class="esqueleto esqueleto--tarjeta"></div>
+    </div>
+
+    <!-- ═══ ESTADO: error ═══ -->
+    <div class="estado-error oculto" id="estado-error">
+      <p class="estado-error__titulo">No pudimos cargar tus eventos</p>
+      <p class="estado-error__texto">Revisa tu conexión e inténtalo de nuevo.</p>
+      <button class="btn btn--secundario" type="button" id="btn-reintentar">Reintentar</button>
+    </div>
+
+    <!-- ═══ ESTADO: vacío ═══ -->
+    <div class="estado-vacio oculto" id="estado-vacio">
+      <p class="estado-vacio__titulo">Todavía no tienes eventos</p>
+      <p class="estado-vacio__texto">Cuando el coordinador te asigne a un evento, aparecerá aquí.</p>
+      <button class="btn btn--secundario" type="button" id="btn-actualizar">Actualizar</button>
+    </div>
+
+    <!-- ═══ ESTADO: con datos ═══ -->
+    <ul id="lista-eventos" class="oculto"
+        style="list-style:none; margin:0; padding:0; display:grid; gap:var(--e-3)"></ul>
+
+  </main>
+
+  <script type="module" src="/tecnico-eventos.js"></script>
+</body>
+</html>
