@@ -1,4 +1,9 @@
 import { supabase } from './supabaseClient.js';
+import { exigirRol } from './guardia.js';
+
+// Esta es la pantalla de inicio del coordinador. Sin sesión va al login;
+// un técnico es enviado a su propio diseño (móvil).
+await exigirRol('coordinador');
 
 // ── Cerrar sesión (mismo bloque que ya tienen eventos.js e inventario.js) ──
 document.getElementById('btn-salir')?.addEventListener('click', async (evento) => {
