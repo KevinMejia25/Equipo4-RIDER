@@ -830,3 +830,92 @@
   }
 
 }
+
+
+/* Ajustes visuales para el resumen general de asignaciones */
+
+.equipo-dato--principal strong {
+    overflow-wrap: anywhere;
+}
+
+.equipo-datos {
+    align-items: start;
+}
+
+.evento-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #263449;
+    border-radius: 10px;
+    background: #0b111a;
+}
+
+.evento-item__nombre {
+    overflow-wrap: anywhere;
+}
+
+.evento-item__fecha {
+    color: #a7b6cc;
+    line-height: 1.6;
+}
+
+.evento-item .btn {
+    margin-top: 4px;
+}
+
+
+/* Resumen general: reducir saturación visual */
+
+.equipo-dato--principal strong {
+    color: #e8eefb;
+    font-size: 1.15rem;
+    overflow-wrap: anywhere;
+}
+
+.equipo-datos {
+    align-items: center;
+}
+
+.equipo-dato {
+    gap: 10px;
+}
+
+.disponibilidad-resumen > div {
+    min-width: 0;
+}
+
+.disponibilidad-resumen .ficha-estado {
+    white-space: nowrap;
+}
+
+.ficha-estado.oculto {
+    display: none !important;
+}
+
+#lista-eventos .evento-item {
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #263449;
+    border-radius: 10px;
+    background: #0b111a;
+}
+
+
+
+/* Ocultar los resúmenes únicamente en la vista general */
+body.vista-asignaciones .ficha-contenedor .equipo-datos,
+body.vista-asignaciones .ficha-contenedor #disponibilidad-resumen,
+body.vista-asignaciones .ficha-contenedor .disponibilidad > .seccion-titulo {
+    display: none !important;
+}
+
+
+/* Ocultar el título de asignaciones de equipos */
+body.vista-asignaciones .calendario__titulo {
+    display: none !important;
+}
+
