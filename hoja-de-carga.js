@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient.js';
 
 // ============================================================
@@ -42,13 +43,17 @@ let eventoActual = null;
 let equiposDisponibles = [];
 let equiposAsignados = [];
 let asignacionPendienteBorrar = null;
+let equiposOcupadosOtrosEventos = new Set();
 
 const ESTADOS_EDITABLES = ['cotizado', 'confirmado'];
 
 const MAPA_CONDICION = {
     bueno: 'Bueno',
+    buen_estado: 'Buen estado',
     regular: 'Regular',
-    malo: 'Malo'
+    malo: 'Dañado',
+    danado: 'Dañado',
+    dañado: 'Dañado'
 };
 
 // ============================================================
@@ -104,6 +109,14 @@ function convertirAInputFecha(fecha) {
     return `${fechaObj.getFullYear()}-${pad(fechaObj.getMonth() + 1)}-${pad(fechaObj.getDate())}T${pad(fechaObj.getHours())}:${pad(fechaObj.getMinutes())}`;
 }
 
+function normalizarTexto(valor) {
+    return String(valor ?? '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
 function obtenerCondicion(equipo) {
     const condicion = equipo?.condicion;
 
@@ -111,8 +124,23 @@ function obtenerCondicion(equipo) {
         return 'Sin especificar';
     }
 
-    return MAPA_CONDICION[String(condicion).toLowerCase()]
+    const clave = normalizarTexto(condicion).replace(/\s+/g, '_');
+
+    return MAPA_CONDICION[clave]
         || condicion;
+}
+
+// Reconoce los valores de condición utilizados en Supabase:
+// "dañado", "danado", "malo" y variantes equivalentes.
+function equipoEstaDanado(equipo) {
+    const condicion = normalizarTexto(equipo?.condicion);
+
+    return [
+        'danado',
+        'malo',
+        'mal_estado',
+        'fuera_de_servicio'
+    ].includes(condicion);
 }
 
 function eventoEsEditable() {
@@ -320,7 +348,7 @@ function actualizarPermisos() {
 }
 
 // ============================================================
-// CARGAR EQUIPOS ASIGNADOS
+// CARGAR EQUIPOS ASIGNADOS AL EVENTO ACTUAL
 // ============================================================
 
 async function cargarEquiposAsignados(eventoId) {
@@ -545,7 +573,30 @@ async function guardarRetorno(asignacionId, valorInput, input) {
 }
 
 // ============================================================
-// CARGAR EQUIPOS DISPONIBLES
+// CARGAR EQUIPOS OCUPADOS EN OTROS EVENTOS
+// ============================================================
+
+async function cargarEquiposOcupadosOtrosEventos() {
+    const { data, error } = await supabase
+        .from('evento_equipo')
+        .select('equipo_id, evento_id')
+        .neq('evento_id', eventoActual.id);
+
+    if (error) {
+        console.error('Error consultando equipos ocupados:', error);
+
+        throw new Error(
+            'No se pudo verificar si los equipos están ocupados en otros eventos.'
+        );
+    }
+
+    equiposOcupadosOtrosEventos = new Set(
+        (data || []).map(asignacion => asignacion.equipo_id)
+    );
+}
+
+// ============================================================
+// CARGAR EQUIPOS DEL MODAL
 // ============================================================
 
 async function cargarEquiposDisponibles() {
@@ -558,55 +609,64 @@ async function cargarEquiposDisponibles() {
         modalEquipoBody.innerHTML = '';
     }
 
-    const { data, error } = await supabase
-        .from('equipos')
-        .select(`
-            id,
-            clave,
-            nombre,
-            condicion,
-            activo,
-            categorias (
-                nombre
-            )
-        `)
-        .eq('activo', true)
-        .order('clave', { ascending: true });
+    try {
+        const { data, error } = await supabase
+            .from('equipos')
+            .select(`
+                id,
+                clave,
+                nombre,
+                condicion,
+                activo,
+                categorias (
+                    nombre
+                )
+            `)
+            .eq('activo', true)
+            .order('clave', { ascending: true });
 
-    modalCargando?.classList.add('oculto');
-
-    if (error) {
-        console.error('Error cargando equipos disponibles:', error);
-
-        if (modalError) {
-            modalError.textContent = 'No se pudieron cargar los equipos. Inténtalo de nuevo.';
-            modalError.classList.remove('oculto');
+        if (error) {
+            throw error;
         }
 
-        return;
+        await cargarEquiposOcupadosOtrosEventos();
+
+        const idsAsignadosEventoActual = new Set(
+            equiposAsignados.map(asignacion => asignacion.equipo_id)
+        );
+
+        equiposDisponibles = (data || []).filter(
+            equipo => !idsAsignadosEventoActual.has(equipo.id)
+        );
+
+        modalCargando?.classList.add('oculto');
+
+        if (equiposDisponibles.length === 0) {
+            modalTablaContenedor?.classList.add('oculto');
+            modalVacio?.classList.remove('oculto');
+            return;
+        }
+
+        pintarEquiposDisponibles();
+
+    } catch (error) {
+        console.error('Error cargando equipos disponibles:', error);
+
+        modalCargando?.classList.add('oculto');
+
+        if (modalError) {
+            modalError.textContent =
+                error.message || 'No se pudieron cargar los equipos. Inténtalo de nuevo.';
+            modalError.classList.remove('oculto');
+        }
     }
-
-    const idsAsignados = new Set(
-        equiposAsignados.map(asignacion => asignacion.equipo_id)
-    );
-
-    equiposDisponibles = (data || []).filter(
-        equipo => !idsAsignados.has(equipo.id)
-    );
-
-    if (equiposDisponibles.length === 0) {
-        modalTablaContenedor?.classList.add('oculto');
-        modalVacio?.classList.remove('oculto');
-        return;
-    }
-
-    pintarEquiposDisponibles();
 }
 
 // ============================================================
 // PINTAR EQUIPOS DISPONIBLES
-// Sin columnas adicionales de Retorno ni Acción.
-// El botón Agregar va dentro de la columna Equipo.
+// Equipo ocupado: solo muestra "Equipo ocupado" deshabilitado.
+// Equipo dañado: solo muestra "Equipo dañado" deshabilitado.
+// Ninguno muestra texto adicional al lado del botón.
 // ============================================================
 
 function pintarEquiposDisponibles() {
@@ -618,6 +678,18 @@ function pintarEquiposDisponibles() {
 
     equiposDisponibles.forEach(equipo => {
         const fila = document.createElement('tr');
+
+        const danado = equipoEstaDanado(equipo);
+        const ocupado = equiposOcupadosOtrosEventos.has(equipo.id);
+        const noDisponible = danado || ocupado;
+
+        let textoBoton = '+ Agregar';
+
+        if (danado) {
+            textoBoton = 'Equipo dañado';
+        } else if (ocupado) {
+            textoBoton = 'Equipo ocupado';
+        }
 
         fila.innerHTML = `
             <td>
@@ -636,8 +708,9 @@ function pintarEquiposDisponibles() {
                         type="button"
                         class="btn btn--pequeno equipo-disponible__boton btn-agregar-equipo-modal"
                         data-id="${escaparHTML(equipo.id)}"
+                        ${noDisponible ? 'disabled aria-disabled="true"' : ''}
                     >
-                        + Agregar
+                        ${escaparHTML(textoBoton)}
                     </button>
                 </div>
             </td>
@@ -657,6 +730,7 @@ function pintarEquiposDisponibles() {
 
 // ============================================================
 // AGREGAR EQUIPO
+// Verifica nuevamente su condición y sus asignaciones.
 // ============================================================
 
 async function agregarEquipo(equipo) {
@@ -664,60 +738,134 @@ async function agregarEquipo(equipo) {
         return false;
     }
 
-    const { data, error } = await supabase
-        .from('evento_equipo')
-        .insert({
-            evento_id: eventoActual.id,
-            equipo_id: equipo.id,
-            salida_registrada: new Date().toISOString(),
-            retorno_registrado: null,
-            pendiente_envio: false
-        })
-        .select(`
-            id,
-            evento_id,
-            equipo_id,
-            salida_registrada,
-            retorno_registrado,
-            condicion_retorno,
-            nota,
-            pendiente_envio,
-            equipos (
-                id,
-                clave,
-                nombre,
-                condicion,
-                activo,
-                categorias (
-                    nombre
-                )
-            )
-        `)
-        .single();
+    try {
+        const { data: equipoActualizado, error: errorEquipo } = await supabase
+            .from('equipos')
+            .select('id, activo, condicion')
+            .eq('id', equipo.id)
+            .maybeSingle();
 
-    if (error) {
+        if (errorEquipo) {
+            throw errorEquipo;
+        }
+
+        if (!equipoActualizado || equipoActualizado.activo !== true) {
+            if (modalError) {
+                modalError.textContent =
+                    'Este equipo está inactivo y no se puede agregar.';
+                modalError.classList.remove('oculto');
+            }
+
+            await cargarEquiposDisponibles();
+            return false;
+        }
+
+        // Bloquear cualquier variante de condición dañada.
+        if (equipoEstaDanado(equipoActualizado)) {
+            if (modalError) {
+                modalError.textContent =
+                    'Este equipo está dañado y no se puede agregar al evento.';
+                modalError.classList.remove('oculto');
+            }
+
+            await cargarEquiposDisponibles();
+            return false;
+        }
+
+        // Verificar asignaciones existentes antes de insertar.
+        const { data: asignacionesActuales, error: errorAsignaciones } =
+            await supabase
+                .from('evento_equipo')
+                .select('id, evento_id')
+                .eq('equipo_id', equipo.id);
+
+        if (errorAsignaciones) {
+            throw errorAsignaciones;
+        }
+
+        if (asignacionesActuales?.length) {
+            const asignadoEnEsteEvento = asignacionesActuales.some(
+                asignacion => asignacion.evento_id === eventoActual.id
+            );
+
+            const asignadoEnOtroEvento = asignacionesActuales.some(
+                asignacion => asignacion.evento_id !== eventoActual.id
+            );
+
+            if (asignadoEnEsteEvento || asignadoEnOtroEvento) {
+                if (modalError) {
+                    modalError.textContent = asignadoEnOtroEvento
+                        ? 'Este equipo ya está asignado a otro evento y no se puede agregar.'
+                        : 'Este equipo ya está asignado a este evento.';
+
+                    modalError.classList.remove('oculto');
+                }
+
+                await cargarEquiposAsignados(eventoActual.id);
+                await cargarEquiposDisponibles();
+
+                return false;
+            }
+        }
+
+        const { data, error } = await supabase
+            .from('evento_equipo')
+            .insert({
+                evento_id: eventoActual.id,
+                equipo_id: equipo.id,
+                salida_registrada: new Date().toISOString(),
+                retorno_registrado: null,
+                pendiente_envio: false
+            })
+            .select(`
+                id,
+                evento_id,
+                equipo_id,
+                salida_registrada,
+                retorno_registrado,
+                condicion_retorno,
+                nota,
+                pendiente_envio,
+                equipos (
+                    id,
+                    clave,
+                    nombre,
+                    condicion,
+                    activo,
+                    categorias (
+                        nombre
+                    )
+                )
+            `)
+            .single();
+
+        if (error) {
+            throw error;
+        }
+
+        equiposAsignados.push(data);
+
+        pintarEquiposAsignados();
+
+        await cargarEquiposDisponibles();
+
+        return true;
+
+    } catch (error) {
         console.error('Error agregando equipo:', error);
 
         if (modalError) {
             modalError.textContent =
-                `No se pudo agregar el equipo: ${error.message}`;
+                `No se pudo agregar el equipo: ${error.message || 'Error inesperado.'}`;
             modalError.classList.remove('oculto');
         }
 
         return false;
     }
-
-    equiposAsignados.push(data);
-
-    pintarEquiposAsignados();
-
-    await cargarEquiposDisponibles();
-
-    return true;
 }
 
 // ============================================================
-// BORRAR EQUIPO DEL EVENTO
+// QUITAR EQUIPO DEL EVENTO
 // ============================================================
 
 async function quitarEquipo(asignacionId) {
@@ -728,13 +876,16 @@ async function quitarEquipo(asignacionId) {
     const { error } = await supabase
         .from('evento_equipo')
         .delete()
-        .eq('id', asignacionId);
+        .eq('id', asignacionId)
+        .eq('evento_id', eventoActual.id);
 
     if (error) {
         console.error('Error borrando equipo:', error);
+
         mostrarErrorBorrado(
             `No se pudo quitar el equipo. ${error.message}`
         );
+
         return false;
     }
 
@@ -843,7 +994,7 @@ tablaEquipoBody?.addEventListener('change', async event => {
 modalEquipoBody?.addEventListener('click', async event => {
     const boton = event.target.closest('.btn-agregar-equipo-modal');
 
-    if (!boton) {
+    if (!boton || boton.disabled) {
         return;
     }
 
@@ -856,15 +1007,14 @@ modalEquipoBody?.addEventListener('click', async event => {
     }
 
     boton.disabled = true;
-    boton.textContent = 'Agregando...';
+    boton.textContent = 'Verificando...';
 
     const agregado = await agregarEquipo(equipo);
 
     if (agregado) {
         cerrarModal();
     } else {
-        boton.disabled = false;
-        boton.textContent = '+ Agregar';
+        await cargarEquiposDisponibles();
     }
 });
 
@@ -910,6 +1060,7 @@ async function iniciar() {
 
         estadoCargando?.classList.add('oculto');
         estadoConDatos?.classList.remove('oculto');
+
     } catch (error) {
         console.error('Error iniciando hoja de carga:', error);
 
@@ -921,3 +1072,4 @@ async function iniciar() {
 }
 
 iniciar();
+git 
