@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>RIDER | Reporte de utilización</title>
+
+  <link rel="stylesheet" href="/estilos/ui.css">
+  <link rel="stylesheet" href="/estilos/reporte-utilizacion.css">
+</head>
+
+<body>
+
+  <!-- Barra superior -->
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+
+    <div class="barra__acciones">
+      <span class="pequeno tenue">Coordinador</span>
+
+      <a class="btn btn--pequeno btn--secundario" href="login.html">
+        Salir
+      </a>
+    </div>
+  </header>
+
+  <!-- Navegación principal -->
+  <nav class="pestanas" aria-label="Navegación principal">
+    <a class="pestana" href="index.html">Inicio</a>
+    <a class="pestana" href="inventario.html" aria-current="page">
+      Inventario
+    </a>
+    <a class="pestana" href="eventos.html">Eventos</a>
+    <a class="pestana" href="clientes.html">Clientes</a>
+    <a class="pestana" href="cuadrilla.html">Cuadrilla</a>
+  </nav>
+
+  <main class="contenedor reporte">
+
+    <!-- Volver al inventario: misma posición que en ficha de equipo -->
+    <div class="reporte__navegacion">
+      <a href="inventario.html" class="reporte__volver">
+        ← Volver al inventario
+      </a>
+
+      <p class="reporte__breadcrumb">
+        Inventario / Reporte de utilización
+      </p>
+    </div>
+
+    <!-- Encabezado del reporte -->
+    <section class="reporte__encabezado">
+
+      <div class="reporte__titulo">
+        <h2>Reporte de utilización</h2>
+
+        <p class="tenue">
+          Consulta el uso de los equipos audiovisuales,
+          sus asignaciones y su estado actual.
+        </p>
+      </div>
+
+      <div class="reporte__acciones">
+
+<button
+  class="btn btn--secundario"
+  type="button"
+  id="btn-exportar">
+  ↓ Exportar PDF
+</button>
+
+
+        <button
+          class="btn"
+          type="button"
+          id="btn-actualizar">
+          Actualizar
+        </button>
+
+      </div>
+    </section>
+
+    <!-- Mensaje de estado -->
+    <p
+      id="mensaje-reporte"
+      class="reporte__mensaje"
+      role="status"
+      aria-live="polite">
+      Cargando información...
+    </p>
+
+    <!-- Filtros del reporte -->
+    <section class="reporte__filtros">
+
+      <h3>Filtros del reporte</h3>
+
+      <div class="reporte__filtros-grid">
+
+        <div class="campo">
+          <label for="reporte-fecha-inicio">
+            Fecha inicial
+          </label>
+
+          <input
+            class="campo__control"
+            type="date"
+            id="reporte-fecha-inicio">
+        </div>
+
+        <div class="campo">
+          <label for="reporte-fecha-fin">
+            Fecha final
+          </label>
+
+          <input
+            class="campo__control"
+            type="date"
+            id="reporte-fecha-fin">
+        </div>
+
+        <div class="campo">
+          <label for="reporte-filtro-categoria">
+            Categoría
+          </label>
+
+          <select
+            class="campo__control"
+            id="reporte-filtro-categoria">
+            <option value="">Todas las categorías</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="reporte-filtro-estado">
+            Estado
+          </label>
+
+          <select
+            class="campo__control"
+            id="reporte-filtro-estado">
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+
+        <div class="campo reporte__campo-busqueda">
+          <label for="reporte-buscar-equipo">
+            Equipo
+          </label>
+
+          <input
+            class="campo__control"
+            type="search"
+            id="reporte-buscar-equipo"
+            placeholder="Buscar por nombre o clave...">
+        </div>
+
+        <div class="reporte__filtro-accion">
+          <button
+            class="btn"
+            type="button"
+            id="btn-filtrar">
+            Aplicar filtros
+          </button>
+        </div>
+
+      </div>
+
+      <p class="reporte__nota">
+        El filtro por fechas requiere vincular el periodo
+        con las fechas de asignación registradas en Supabase.
+      </p>
+
+    </section>
+
+    <!-- Resumen del inventario -->
+    <section class="reporte__resumen">
+
+      <div class="reporte__seccion-titulo">
+        <h3>Resumen del inventario</h3>
+
+        <p class="tenue">
+          Equipos encontrados, asignaciones y estado actual.
+        </p>
+      </div>
+
+      <div class="reporte__indicadores">
+
+        <article class="reporte__indicador">
+          <p>Equipos registrados</p>
+          <strong id="total-equipos">—</strong>
+          <small>Equipos que coinciden con los filtros</small>
+        </article>
+
+        <article class="reporte__indicador reporte__indicador--azul">
+          <p>Asignaciones registradas</p>
+          <strong id="total-horas">—</strong>
+          <small>Registros de asignación, no horas</small>
+        </article>
+
+        <article class="reporte__indicador reporte__indicador--verde">
+          <p>Tasa de equipos activos</p>
+          <strong id="porcentaje-utilizacion">—</strong>
+          <small>Porcentaje de equipos activos</small>
+        </article>
+
+        <article class="reporte__indicador reporte__indicador--amarillo">
+          <p>Equipos sin asignaciones</p>
+          <strong id="equipos-mas-utilizados">—</strong>
+          <small>Sin registros de asignación</small>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Tabla de equipos -->
+    <section class="reporte__tabla-panel">
+
+      <div class="reporte__tabla-encabezado">
+
+        <div>
+          <h3>Equipos y utilización</h3>
+
+          <p class="tenue">
+            Consulta las asignaciones y el estado de cada equipo.
+          </p>
+        </div>
+
+        <span
+          class="reporte__contador"
+          id="cantidad-resultados">
+          — equipos
+        </span>
+
+      </div>
+
+      <div class="reporte__tabla-scroll">
+
+        <table class="tabla reporte__tabla">
+
+          <thead>
+            <tr>
+              <th scope="col">Clave</th>
+              <th scope="col">Equipo</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Asignaciones</th>
+              <th scope="col">Utilización</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+
+          <tbody id="filas-reporte">
+            <tr>
+              <td colspan="6" class="reporte__vacio">
+                Cargando equipos...
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Lógica del reporte -->
+  <script type="module" src="/reporte-utilizacion.js"></script>
+
+</body>
+</html>
