@@ -1,0 +1,639 @@
+
+/* =====================================================
+   RIDER | REPORTE DE UTILIZACIÓN
+   Tema oscuro · Diseño profesional
+   ===================================================== */
+
+/* CONTENEDOR PRINCIPAL */
+
+.reporte {
+  width: min(100% - 32px, 1180px);
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--e-5) var(--e-4) var(--e-7);
+  color: var(--color-texto);
+  box-sizing: border-box;
+}
+
+.reporte *,
+.reporte *::before,
+.reporte *::after {
+  box-sizing: border-box;
+}
+
+.reporte h2,
+.reporte h3 {
+  color: var(--color-texto);
+}
+
+.reporte h2 {
+  margin: 0 0 var(--e-2);
+  font-size: var(--t-2xl);
+  line-height: 1.25;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.reporte h3 {
+  margin: 0 0 var(--e-3);
+  font-size: var(--t-lg);
+  font-weight: 650;
+}
+
+.reporte p {
+  line-height: 1.55;
+}
+
+.reporte .tenue {
+  color: var(--color-texto-suave);
+}
+
+/* =====================================================
+   NAVEGACIÓN: VOLVER AL INVENTARIO
+   ===================================================== */
+
+.reporte__navegacion {
+  margin: 0 0 var(--e-4);
+}
+
+.reporte__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--e-1);
+  color: #3b82f6;
+  font-size: var(--t-base);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.reporte__volver:hover {
+  color: var(--color-marca);
+  text-decoration: underline;
+}
+
+.reporte__volver:focus-visible {
+  outline: 2px solid var(--color-marca);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.reporte__breadcrumb {
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: var(--t-sm);
+}
+
+/* =====================================================
+   ENCABEZADO
+   ===================================================== */
+
+.reporte__encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--e-4);
+  margin: 0 0 var(--e-4);
+}
+
+.reporte__encabezado > div:first-child {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.reporte__eyebrow {
+  margin: 0 0 var(--e-2);
+  color: var(--color-marca);
+  font-size: var(--t-xs);
+  font-weight: 750;
+  letter-spacing: 0.1em;
+}
+
+.reporte__encabezado > div:first-child > p:last-child {
+  max-width: 600px;
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: var(--t-sm);
+  line-height: 1.65;
+}
+
+.reporte__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+}
+
+.reporte__acciones .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--alto-control);
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--color-marca);
+  border-radius: var(--radio);
+  background: var(--color-marca);
+  color: #ffffff;
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.reporte__acciones .btn:hover {
+  background: var(--color-marca-oscuro);
+  border-color: var(--color-marca-oscuro);
+  transform: translateY(-1px);
+}
+
+.reporte__acciones .btn--secundario {
+  background: var(--color-superficie);
+  border-color: var(--color-borde-fuerte);
+  color: var(--color-texto);
+}
+
+.reporte__acciones .btn--secundario:hover {
+  background: var(--color-marca-suave);
+  border-color: var(--color-marca);
+  color: var(--color-texto);
+}
+
+/* =====================================================
+   MENSAJE DE ESTADO
+   ===================================================== */
+
+.reporte__mensaje {
+  margin: 0 0 var(--e-4);
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto-suave);
+  font-size: var(--t-sm);
+}
+
+/* =====================================================
+   PANELES
+   ===================================================== */
+
+.reporte__filtros,
+.reporte__indicador,
+.reporte__tabla-panel {
+  min-width: 0;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.reporte__filtros {
+  margin-bottom: var(--e-4);
+  padding: var(--e-4);
+}
+
+.reporte__filtros h3 {
+  margin-bottom: var(--e-4);
+}
+
+/* =====================================================
+   FILTROS
+   ===================================================== */
+
+.reporte__filtros-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--e-3);
+  align-items: end;
+}
+
+.reporte .campo {
+  min-width: 0;
+  margin: 0;
+}
+
+.reporte .campo label {
+  display: block;
+  margin-bottom: var(--e-1);
+  color: var(--color-texto-suave);
+  font-size: var(--t-xs);
+  font-weight: 650;
+}
+
+.reporte .campo__control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--alto-control);
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio);
+  outline: none;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--t-sm);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.reporte .campo__control::placeholder {
+  color: var(--color-texto-tenue);
+}
+
+.reporte .campo__control:focus {
+  border-color: var(--color-marca);
+  box-shadow: 0 0 0 3px var(--color-marca-suave);
+}
+
+.reporte .campo__control option {
+  background: var(--color-superficie);
+  color: var(--color-texto);
+}
+
+.reporte__filtro-accion {
+  min-width: 0;
+}
+
+.reporte__filtro-accion .btn {
+  width: 100%;
+  min-height: var(--alto-control);
+  padding: var(--e-2);
+  border: 1px solid var(--color-marca);
+  border-radius: var(--radio);
+  background: var(--color-marca);
+  color: #ffffff;
+  font: inherit;
+  font-size: var(--t-xs);
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.reporte__filtro-accion .btn:hover {
+  background: var(--color-marca-oscuro);
+}
+
+.reporte__nota {
+  margin: var(--e-3) 0 0;
+  color: var(--color-texto-tenue);
+  font-size: var(--t-xs);
+  line-height: 1.6;
+}
+
+/* =====================================================
+   RESUMEN E INDICADORES
+   ===================================================== */
+
+.reporte__resumen {
+  margin-bottom: var(--e-4);
+}
+
+.reporte__seccion-titulo {
+  margin-bottom: var(--e-3);
+}
+
+.reporte__seccion-titulo h3 {
+  margin-bottom: var(--e-1);
+}
+
+.reporte__seccion-titulo p {
+  margin: 0;
+  font-size: var(--t-xs);
+}
+
+.reporte__indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--e-3);
+}
+
+.reporte__indicador {
+  position: relative;
+  min-width: 0;
+  padding: var(--e-4);
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.reporte__indicador:hover {
+  border-color: var(--color-borde-fuerte);
+  transform: translateY(-2px);
+}
+
+.reporte__indicador::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--color-marca);
+  content: "";
+}
+
+.reporte__indicador--azul::before {
+  background: var(--color-info);
+}
+
+.reporte__indicador--verde::before {
+  background: var(--color-exito);
+}
+
+.reporte__indicador--amarillo::before {
+  background: var(--color-aviso);
+}
+
+.reporte__indicador p {
+  margin: 0 0 var(--e-3);
+  color: var(--color-texto-suave);
+  font-size: var(--t-xs);
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.reporte__indicador strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--color-texto);
+  font-size: var(--t-2xl);
+  font-weight: 750;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.reporte__indicador small {
+  display: block;
+  margin-top: var(--e-2);
+  color: var(--color-texto-tenue);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   TABLA DE EQUIPOS
+   ===================================================== */
+
+.reporte__tabla-panel {
+  overflow: hidden;
+}
+
+.reporte__tabla-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  padding: var(--e-4);
+}
+
+.reporte__tabla-encabezado h3 {
+  margin-bottom: var(--e-1);
+}
+
+.reporte__tabla-encabezado p {
+  margin: 0;
+  font-size: var(--t-xs);
+}
+
+.reporte__contador {
+  flex-shrink: 0;
+  padding: var(--e-1) var(--e-2);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-full);
+  background: var(--color-aviso-suave);
+  color: var(--color-aviso);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.reporte__tabla-scroll {
+  max-height: 500px;
+  overflow: auto;
+  border-top: 1px solid var(--color-borde);
+  scrollbar-width: thin;
+  scrollbar-color:
+    var(--color-borde-fuerte)
+    var(--color-superficie);
+}
+
+.reporte__tabla {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font-size: var(--t-sm);
+}
+
+.reporte__tabla th,
+.reporte__tabla td {
+  padding: var(--e-3);
+  border-bottom: 1px solid var(--color-borde);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.reporte__tabla th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-marca-suave);
+  color: var(--color-texto-suave);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.reporte__tabla td {
+  color: var(--color-texto);
+  line-height: 1.5;
+}
+
+.reporte__tabla td strong {
+  color: var(--color-texto);
+  font-weight: 650;
+}
+
+.reporte__tabla tbody tr {
+  transition: background 0.15s ease;
+}
+
+.reporte__tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.reporte__tabla tbody tr:hover {
+  background: var(--color-fondo);
+}
+
+.reporte__tabla .reporte__vacio {
+  padding: var(--e-6) var(--e-4);
+  color: var(--color-texto-suave);
+  text-align: center;
+}
+
+/* =====================================================
+   ESTADOS
+   ===================================================== */
+
+.reporte__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+  font-size: var(--t-xs);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.reporte__estado::before {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.reporte__estado--activo {
+  color: var(--color-exito);
+}
+
+.reporte__estado--inactivo {
+  color: var(--color-error);
+}
+
+.reporte__estado--uso {
+  color: var(--color-info);
+}
+
+.reporte__estado--sin-uso {
+  color: var(--color-aviso);
+}
+
+/* =====================================================
+   BARRAS DE DESPLAZAMIENTO
+   ===================================================== */
+
+.reporte__tabla-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.reporte__tabla-scroll::-webkit-scrollbar-track {
+  background: var(--color-superficie);
+}
+
+.reporte__tabla-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-superficie);
+  border-radius: var(--radio-full);
+  background: var(--color-borde-fuerte);
+}
+
+.reporte__tabla-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-texto-tenue);
+}
+
+/* =====================================================
+   TABLET
+   ===================================================== */
+
+@media (max-width: 1050px) {
+  .reporte__filtros-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .reporte__indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =====================================================
+   MÓVIL
+   ===================================================== */
+
+@media (max-width: 639px) {
+  .reporte {
+    width: 100%;
+    padding: var(--e-4) var(--e-3);
+  }
+
+  .reporte__encabezado {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reporte__acciones {
+    width: 100%;
+  }
+
+  .reporte__acciones .btn {
+    flex: 1 1 auto;
+  }
+
+  .reporte__filtros-grid,
+  .reporte__indicadores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reporte__filtros {
+    padding: var(--e-3);
+  }
+
+  .reporte__tabla-encabezado {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* =====================================================
+   ACCESIBILIDAD
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .reporte *,
+  .reporte *::before,
+  .reporte *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* Calendario blanco en el tema oscuro de RIDER */
+.reporte input[type="date"] {
+  color-scheme: dark;
+  color: var(--color-texto);
+  background-color: var(--color-fondo);
+}
+
+.reporte input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 1;
+  cursor: pointer;
+}
+
+
+/* Icono del calendario en blanco */
+.reporte input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* Quitar el efecto morado al seleccionar el filtro */
+.reporte select:focus,
+.reporte select:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}

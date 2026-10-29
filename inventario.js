@@ -2113,10 +2113,34 @@ const canalInventario = supabase
 
   });
 
+  
+const btnConsultarReporte = document.getElementById('btn-consultar-reporte');
+const btnVolverInventario = document.getElementById('btn-volver-inventario');
+const vistaInventario = document.getElementById('inventario-vista');
+const vistaReporte = document.getElementById('reporte-vista');
+
+btnConsultarReporte?.addEventListener('click', () => {
+  vistaInventario?.classList.add('oculto');
+  vistaReporte?.classList.remove('oculto');
+
+  window.scrollTo({ top: 0, behavior: 'auto' });
+});
+
+btnVolverInventario?.addEventListener('click', () => {
+  vistaReporte?.classList.add('oculto');
+  vistaInventario?.classList.remove('oculto');
+
+  window.scrollTo({ top: 0, behavior: 'auto' });
+});
+
+
+
+
 
 /* =========================================================
    INICIO
 ========================================================= */
+
 
 cargarCategorias();
 
