@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js';
-import { obtenerPerfil, rutaInicioPorRol } from './guardia.js';
+import { obtenerPerfil, rutaInicioPorRol, guardarPerfil } from './guardia.js';
 
 const form = document.getElementById('form-login');
 const inputCorreo = document.getElementById('correo');
@@ -8,7 +8,10 @@ const btnEntrar = document.getElementById('btn-entrar');
 const avisoError = document.getElementById('aviso-error');
 const avisoErrorTexto = document.getElementById('aviso-error-texto');
 
-
+// ── Si ya hay sesión activa, no tiene caso ver el login de nuevo ──
+// Cada rol va a su propia pantalla de inicio (coordinador: escritorio,
+// técnico: móvil). Si hay sesión pero sin perfil usable, obtenerPerfil
+// la cierra y aquí se queda el formulario.
 const perfilActual = await obtenerPerfil();
 if (perfilActual) {
   window.location.replace(rutaInicioPorRol(perfilActual.rol));
@@ -73,7 +76,10 @@ form.addEventListener('submit', async (evento) => {
       .single();
 
     if (errorPerfil || !perfil) {
-
+      // Sin esto, la sesión de Auth queda activa aunque el login
+      // "falle" desde la perspectiva del usuario — y la próxima vez
+      // que entre a login.html, lo mandaría directo a su pantalla de
+      // inicio sin haber completado el login de verdad.
       await supabase.auth.signOut();
       throw new Error(
         'Tu cuenta existe pero no está ligada a ningún perfil en el sistema. Avisa al coordinador.'
@@ -86,8 +92,10 @@ form.addEventListener('submit', async (evento) => {
     }
 
     // 3 · Guardamos el perfil para que otras pantallas lo consulten
-
-    sessionStorage.setItem('rider_perfil', JSON.stringify(perfil));
+    //     sin tener que volver a hacer esta consulta cada vez.
+    //     Esto es solo conveniencia de interfaz — la seguridad real
+    //     la da RLS en el servidor, no lo que guardemos aquí.
+    guardarPerfil(perfil);
 
     // 4 · Cada rol entra a su propio diseño.
     window.location.href = rutaInicioPorRol(perfil.rol);

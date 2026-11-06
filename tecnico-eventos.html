@@ -38,6 +38,9 @@
     <h1 style="margin-bottom:var(--e-1)">Mis eventos</h1>
     <p class="pequeno tenue mb-3" id="resumen">&nbsp;</p>
 
+    <!-- Se muestra cuando los datos son la copia guardada y no los de la red -->
+    <div class="aviso aviso--aviso mb-3 oculto" id="aviso-datos" role="status"></div>
+
     <!-- ═══ ESTADO: cargando ═══ -->
     <div id="estado-cargando" aria-hidden="true">
       <div class="esqueleto esqueleto--tarjeta" style="margin-bottom:var(--e-3)"></div>
@@ -47,8 +50,8 @@
 
     <!-- ═══ ESTADO: error ═══ -->
     <div class="estado-error oculto" id="estado-error">
-      <p class="estado-error__titulo">No pudimos cargar tus eventos</p>
-      <p class="estado-error__texto">Revisa tu conexión e inténtalo de nuevo.</p>
+      <p class="estado-error__titulo" id="error-titulo">No pudimos cargar tus eventos</p>
+      <p class="estado-error__texto" id="error-texto">Revisa tu conexión e inténtalo de nuevo.</p>
       <button class="btn btn--secundario" type="button" id="btn-reintentar">Reintentar</button>
     </div>
 

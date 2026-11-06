@@ -1,25 +1,34 @@
-import { supabase } from './supabaseClient.js';
-import { exigirRol } from './guardia.js';
+import { exigirRol, cerrarSesion } from './guardia.js';
+import { cargarMisEventos } from './datos-tecnico.js';
 
-// Pantalla solo para técnicos. Sin sesión va al login;
-await exigirRol('tecnico');
+// Pantalla solo para técnicos. Sin sesión va al login; si entra un
+// coordinador lo manda a su inicio. Lo demás del archivo no corre antes.
+const perfil = await exigirRol('tecnico');
 
-// Cerrar sesión 
-document.getElementById('btn-salir')?.addEventListener('click', async (evento) => {
+// Cierra la sesión y borra del teléfono la copia local de los datos.
+document.getElementById('btn-salir')?.addEventListener('click', (evento) => {
   evento.preventDefault();
-  await supabase.auth.signOut();
-  try { sessionStorage.removeItem('rider_perfil'); } catch { /* sin storage: no pasa nada */ }
-  window.location.href = '/login.html';
+  cerrarSesion();
 });
 
-
-const RUTA_HOJA_CARGA = '/tecnico-hoja-carga.html'; 
+// Pantalla de la hoja de carga de un evento (HU-09: solo lectura; HU-10 y
+// HU-11 le agregan marcar salida y registrar retorno).
+// Si es null, las tarjetas se muestran sin enlace ni flecha.
+const RUTA_HOJA_CARGA = '/tecnico-hoja-carga.html';
 
 const elCargando   = document.getElementById('estado-cargando');
 const elError      = document.getElementById('estado-error');
 const elVacio      = document.getElementById('estado-vacio');
 const elLista      = document.getElementById('lista-eventos');
 const elResumen    = document.getElementById('resumen');
+const elAvisoDatos = document.getElementById('aviso-datos');
+const elErrorTitulo = document.getElementById('error-titulo');
+const elErrorTexto  = document.getElementById('error-texto');
+
+const TEXTO_ERROR_RED = {
+  titulo: 'No pudimos cargar tus eventos',
+  texto: 'Revisa tu conexión e inténtalo de nuevo.',
+};
 
 // Una etiqueta por estado. ui.css trae justo cuatro colores más el gris
 // base, y coinciden con el diseño de Figma (ámbar, verde, gris, azul, rojo).
@@ -40,7 +49,7 @@ const ICONO_FLECHA =
 // navegador ("23 sep" en unos, "23-sep" en otros).
 const FORMATO_FECHA = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
 
-function formatearMontaje(iso) {
+function formatearFechaHora(iso) {
   if (!iso) return '—';
   const f = new Date(iso);
   if (Number.isNaN(f.getTime())) return '—';
@@ -83,7 +92,7 @@ function crearTarjeta(evento) {
                        'flex-wrap:wrap; gap:var(--e-2); margin-top:var(--e-3)';
   const et = ETIQUETA_POR_ESTADO[evento.estado] ?? { clase: '', texto: evento.estado };
   meta.append(
-    texto('span', `MONTAJE · ${formatearMontaje(evento.fecha_montaje)}`, 'tenue',
+    texto('span', `MONTAJE · ${formatearFechaHora(evento.fecha_montaje)}`, 'tenue',
           'font-size:var(--t-xs); font-weight:700; letter-spacing:.02em; text-transform:uppercase'),
     texto('span', et.texto, `etiqueta ${et.clase}`.trim()),
   );
@@ -113,23 +122,38 @@ function pintar(eventos) {
 
 async function cargarEventos() {
   mostrarSoloEstado('cargando');
-  elResumen.textContent = ' ';
+  elAvisoDatos.classList.add('oculto');
+  elResumen.textContent = '\u00a0';
 
-  // No se pide el cliente: un técnico no tiene permiso de leer esa tabla
-  // (HU-16) y no lo necesita. Las políticas RLS ya limitan esta consulta a
-  // los eventos donde la persona está en la cuadrilla.
-  const { data, error } = await supabase
-    .from('eventos')
-    .select('id, nombre, sede, estado, fecha_montaje')
-    .order('fecha_montaje', { ascending: true });
-
-  if (error) {
+  let resultado;
+  try {
+    // Con conexión: baja de Supabase y actualiza la copia local.
+    // Sin conexión: usa la última copia guardada (datos-tecnico.js).
+    // No se pide el cliente: un técnico no tiene permiso de leer esa tabla
+    // (HU-16) y no lo necesita.
+    resultado = await cargarMisEventos(perfil);
+  } catch (error) {
+    // Ni red ni base local (por ejemplo, el navegador bloquea IndexedDB).
     console.error('Error al cargar los eventos del técnico:', error);
-    elResumen.textContent = ' ';
+    elErrorTitulo.textContent = TEXTO_ERROR_RED.titulo;
+    elErrorTexto.textContent = TEXTO_ERROR_RED.texto;
     mostrarSoloEstado('error');
     return;
   }
-  pintar(data ?? []);
+
+  if (resultado.sinCopia) {
+    // Sin conexión y sin nada guardado: es la primera vez en este teléfono.
+    elErrorTitulo.textContent = 'Todavía no hay datos guardados';
+    elErrorTexto.textContent = 'Conéctate a internet una vez para descargar tus eventos y su hoja de carga.';
+    mostrarSoloEstado('error');
+    return;
+  }
+
+  if (resultado.origen === 'local') {
+    elAvisoDatos.textContent = `Mostrando los datos guardados el ${formatearFechaHora(resultado.descargadaEn)}.`;
+    elAvisoDatos.classList.remove('oculto');
+  }
+  pintar(resultado.eventos);
 }
 
 document.getElementById('btn-reintentar').addEventListener('click', cargarEventos);

@@ -1,29 +1,16 @@
-import { supabase } from './supabaseClient.js';
-import { exigirRol } from './guardia.js';
+import { exigirRol, cerrarSesion } from './guardia.js';
 
 // Esta es la pantalla de inicio del coordinador. Sin sesión va al login;
 // un técnico es enviado a su propio diseño (móvil).
-await exigirRol('coordinador');
+const perfil = await exigirRol('coordinador');
 
-// ── Cerrar sesión (mismo bloque que ya tienen eventos.js e inventario.js) ──
-document.getElementById('btn-salir')?.addEventListener('click', async (evento) => {
+// ── Cerrar sesión ──
+document.getElementById('btn-salir')?.addEventListener('click', (evento) => {
   evento.preventDefault();
-  await supabase.auth.signOut();
-  window.location.href = '/login.html';
+  cerrarSesion();
 });
 
 // ── Mostrar el rol real en vez del texto fijo "Coordinador" ──
-// login.js guarda esto en sessionStorage al iniciar sesión. Si por
-// alguna razón no está (por ejemplo, alguien entra sin pasar por el
-// login), se deja el valor por defecto que ya trae el HTML.
-const perfilGuardado = sessionStorage.getItem('rider_perfil');
-if (perfilGuardado) {
-  try {
-    const perfil = JSON.parse(perfilGuardado);
-    const etiqueta = document.getElementById('etiqueta-rol');
-    etiqueta.textContent = perfil.rol === 'tecnico' ? 'Técnico' : 'Coordinador';
-  } catch {
-    // Si el JSON guardado estuviera corrupto, simplemente se ignora
-    // y se deja la etiqueta por defecto.
-  }
-}
+// El perfil lo verificó el guardia contra el servidor justo arriba.
+document.getElementById('etiqueta-rol').textContent =
+  perfil.rol === 'tecnico' ? 'Técnico' : 'Coordinador';
