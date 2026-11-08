@@ -39,15 +39,11 @@ const ETIQUETA_POR_ESTADO = {
   cancelado:  { clase: 'etiqueta--cancelado',  texto: 'Cancelado' },
 };
 
-// Botones que muestra el diseño de Figma en cada estado.
-// Los que traen `accion` ya están conectados (ver ACCIONES_CONECTADAS más abajo:
-// Confirmar es HU-08, Pasar a montaje es la tarea técnica). Los demás se dibujan
-// deshabilitados hasta que les toque su historia (HU-12, HU-13, ...).
-// Los estados finales (cerrado, cancelado) no tienen acciones.
+
 const ACCIONES_POR_ESTADO = {
   cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
   confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
-  en_montaje: [{ texto: 'Cerrar evento', clase: '' }],
+  en_montaje: [{ texto: 'Cerrar evento', clase: '', accion: 'cerrar' }],
   cerrado:    [],
   cancelado:  [],
 };
@@ -96,17 +92,7 @@ function mostrarAviso(tipo, titulo, texto, lineas = []) {
   });
 }
 
-// Acciones de estado ya conectadas al servidor. Ninguna es un UPDATE desde el
-// navegador: cada una llama a una función de Postgres que revisa las reglas y
-// cambia el estado en la misma transacción. Lo que el navegador "sabía" al
-// cargar la pantalla no cuenta; manda lo que responda el servidor.
-//   · rpc:       función del servidor.
-//   · enCurso:   texto del botón mientras espera.
-//   · fallo:     título del aviso si no se pudo (red, rechazo sin detalle).
-//   · exito:     (data) => { titulo, texto } cuando el servidor dice ok.
-//   · rechazos:  código que devuelve el servidor => (data) => { titulo, texto, lineas }.
-//   Un rechazo con `estado_invalido` recarga la pantalla (alguien más cambió el
-//   estado mientras estaba abierta) y no necesita entrada aquí.
+
 const ACCIONES_CONECTADAS = {
   // HU-08 · hu08_confirmar_evento.sql
   confirmar: {
@@ -148,6 +134,32 @@ const ACCIONES_CONECTADAS = {
         lineas: (d.faltan ?? []).map((f) =>
           f === 'equipo' ? 'Equipo: arma la hoja de carga con el botón + de «Equipo asignado».'
                          : 'Cuadrilla: asigna al menos un técnico con el botón + de «Cuadrilla asignada».'),
+      }),
+    },
+  },
+
+  // HU-12 · hu12_cerrar_evento.sql
+  cerrar: {
+    rpc: 'cerrar_evento',
+    enCurso: 'Cerrando…',
+    fallo: 'No se pudo cerrar el evento.',
+    exito: (d) => {
+      const base = d.piezas === 1
+        ? 'La única pieza de su hoja de carga tiene retorno registrado.'
+        : `Las ${d.piezas} piezas de su hoja de carga tienen retorno registrado.`;
+      const detalle = [];
+      if (d.danadas > 0)   detalle.push(`${d.danadas} dañada${d.danadas === 1 ? '' : 's'}`);
+      if (d.faltantes > 0) detalle.push(`${d.faltantes} faltante${d.faltantes === 1 ? '' : 's'}`);
+      return {
+        titulo: 'Evento cerrado.',
+        texto: detalle.length > 0 ? `${base} Entre ellas: ${detalle.join(' y ')}.` : base,
+      };
+    },
+    rechazos: {
+      retornos_pendientes: (d) => ({
+        titulo: 'No se puede cerrar: hay piezas sin retorno registrado.',
+        texto: `Un evento no se cierra hasta que todo su equipo tenga retorno. Falta${(d.pendientes ?? []).length === 1 ? '' : 'n'}:`,
+        lineas: (d.pendientes ?? []).map((p) => `${p.clave} · ${p.nombre}`),
       }),
     },
   },
