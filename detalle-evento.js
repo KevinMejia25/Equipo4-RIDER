@@ -39,10 +39,15 @@ const ETIQUETA_POR_ESTADO = {
   cancelado:  { clase: 'etiqueta--cancelado',  texto: 'Cancelado' },
 };
 
-
+// Botones que muestra el diseño de Figma en cada estado.
+// Los que traen `accion` ya están conectados (ver ACCIONES_CONECTADAS más abajo:
+// Confirmar es HU-08, Pasar a montaje es la tarea técnica, Cerrar es HU-12,
+// Cancelar es HU-13). Un botón sin `accion` se dibuja deshabilitado hasta que
+// le toque su historia.
+// Los estados finales (cerrado, cancelado) no tienen acciones.
 const ACCIONES_POR_ESTADO = {
-  cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
-  confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
+  cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro', accion: 'cancelar' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
+  confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro', accion: 'cancelar' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
   en_montaje: [{ texto: 'Cerrar evento', clase: '', accion: 'cerrar' }],
   cerrado:    [],
   cancelado:  [],
@@ -92,7 +97,17 @@ function mostrarAviso(tipo, titulo, texto, lineas = []) {
   });
 }
 
-
+// Acciones de estado ya conectadas al servidor. Ninguna es un UPDATE desde el
+// navegador: cada una llama a una función de Postgres que revisa las reglas y
+// cambia el estado en la misma transacción. Lo que el navegador "sabía" al
+// cargar la pantalla no cuenta; manda lo que responda el servidor.
+//   · rpc:       función del servidor.
+//   · enCurso:   texto del botón mientras espera.
+//   · fallo:     título del aviso si no se pudo (red, rechazo sin detalle).
+//   · exito:     (data) => { titulo, texto } cuando el servidor dice ok.
+//   · rechazos:  código que devuelve el servidor => (data) => { titulo, texto, lineas }.
+//   Un rechazo con `estado_invalido` recarga la pantalla (alguien más cambió el
+//   estado mientras estaba abierta) y no necesita entrada aquí.
 const ACCIONES_CONECTADAS = {
   // HU-08 · hu08_confirmar_evento.sql
   confirmar: {
@@ -163,17 +178,102 @@ const ACCIONES_CONECTADAS = {
       }),
     },
   },
+
+  // HU-13 · hu13_cancelar_evento.sql
+  // `pedirMotivo`: antes de llamar al servidor se abre un cuadro que exige el
+  // motivo (el servidor lo vuelve a exigir). Si la persona lo cierra sin
+  // confirmar, no se hace nada.
+  cancelar: {
+    rpc: 'cancelar_evento',
+    pedirMotivo: true,
+    enCurso: 'Cancelando…',
+    fallo: 'No se pudo cancelar el evento.',
+    exito: (d) => ({
+      titulo: 'Evento cancelado.',
+      texto: d.liberadas === 0
+        ? 'No tenía equipo apartado, así que no se libera ninguna pieza.'
+        : d.liberadas === 1
+          ? 'Su pieza queda libre para otros eventos.'
+          : `Sus ${d.liberadas} piezas quedan libres para otros eventos.`,
+    }),
+    rechazos: {
+      motivo_requerido: () => ({
+        titulo: 'Falta el motivo.',
+        texto: 'Para cancelar un evento hay que escribir por qué se cancela.',
+      }),
+    },
+  },
 };
+
+// Cuadro que pide el motivo de la cancelación. Devuelve el motivo (sin
+// espacios en los extremos) o null si la persona lo cerró sin confirmar
+// (Volver o la tecla Escape). Usa el <dialog> nativo de ui.css.
+function pedirMotivo() {
+  const dialogo    = document.getElementById('dialogo-cancelar');
+  const campo      = document.getElementById('cancelar-motivo');
+  const contenedor = document.getElementById('cancelar-campo');
+  const error      = document.getElementById('cancelar-error');
+  const confirmar  = document.getElementById('cancelar-confirmar');
+  const volver     = document.getElementById('cancelar-volver');
+
+  document.getElementById('cancelar-titulo').textContent =
+    `¿Cancelar «${document.getElementById('evento-nombre').textContent}»?`;
+  campo.value = '';
+  contenedor.classList.remove('campo--error');
+  error.classList.add('oculto');
+
+  return new Promise((resolve) => {
+    let motivo = null;
+
+    const alEscribir = () => {
+      contenedor.classList.remove('campo--error');
+      error.classList.add('oculto');
+    };
+    const alConfirmar = () => {
+      const texto = campo.value.trim();
+      if (!texto) {            // sin motivo no se cierra el cuadro
+        contenedor.classList.add('campo--error');
+        error.classList.remove('oculto');
+        campo.focus();
+        return;
+      }
+      motivo = texto;
+      dialogo.close();
+    };
+    const alVolver = () => dialogo.close();
+    const alCerrar = () => {   // se cerró: confirmando, con Volver o con Escape
+      campo.removeEventListener('input', alEscribir);
+      confirmar.removeEventListener('click', alConfirmar);
+      volver.removeEventListener('click', alVolver);
+      dialogo.removeEventListener('close', alCerrar);
+      resolve(motivo);
+    };
+
+    campo.addEventListener('input', alEscribir);
+    confirmar.addEventListener('click', alConfirmar);
+    volver.addEventListener('click', alVolver);
+    dialogo.addEventListener('close', alCerrar);
+    dialogo.showModal();
+  });
+}
 
 async function ejecutarAccion(boton, eventoId, clave) {
   const accion = ACCIONES_CONECTADAS[clave];
   limpiarAviso();
+
+  const argumentos = { p_evento_id: eventoId };
+  if (accion.pedirMotivo) {
+    const motivo = await pedirMotivo();
+    if (motivo === null) return;   // cerró el cuadro sin confirmar: no se hace nada
+    argumentos.p_motivo = motivo;
+  }
+
   const textoOriginal = boton.textContent;
   const rehabilitar = () => { boton.disabled = false; boton.textContent = textoOriginal; };
   boton.disabled = true;
   boton.textContent = accion.enCurso;
 
-  const { data, error } = await supabase.rpc(accion.rpc, { p_evento_id: eventoId });
+  const { data, error } = await supabase.rpc(accion.rpc, argumentos);
 
   if (error) {
     console.error(`Error en ${accion.rpc}:`, error);
