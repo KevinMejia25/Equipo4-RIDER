@@ -117,6 +117,33 @@
 
   </main>
 
+  <!-- HU-13: cuadro que pide el motivo antes de cancelar el evento.
+       Lo abre y lo cierra detalle-evento.js (pedirMotivo). El título se llena por JS. -->
+  <!-- El fondo va aquí porque ui.css le da color de texto al <dialog> pero no fondo:
+       sin esto sale blanco sobre el tema oscuro y el texto no se lee. -->
+  <dialog class="dialogo" id="dialogo-cancelar" aria-labelledby="cancelar-titulo"
+          style="background: var(--color-superficie)">
+    <div class="dialogo__cuerpo">
+      <h3 class="dialogo__titulo" id="cancelar-titulo">¿Cancelar este evento?</h3>
+      <p class="dialogo__texto">
+        Esta acción no se puede deshacer. Si el evento estaba confirmado, su equipo
+        queda libre para otros eventos.
+      </p>
+      <div class="campo" id="cancelar-campo">
+        <label class="campo__etiqueta" for="cancelar-motivo">
+          Motivo de la cancelación <span class="requerido">*</span>
+        </label>
+        <textarea class="campo__control" id="cancelar-motivo" rows="3" maxlength="500"
+                  aria-describedby="cancelar-error"></textarea>
+        <span class="campo__error oculto" id="cancelar-error" role="alert">Escribe el motivo de la cancelación.</span>
+      </div>
+      <div class="dialogo__pie">
+        <button class="btn btn--secundario" type="button" id="cancelar-volver">Volver</button>
+        <button class="btn btn--peligro" type="button" id="cancelar-confirmar">Sí, cancelar evento</button>
+      </div>
+    </div>
+  </dialog>
+
   <script type="module" src="/detalle-evento.js"></script>
 </body>
 </html>
