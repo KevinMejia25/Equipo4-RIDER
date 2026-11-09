@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient.js';
 
 // ============================================================
@@ -605,8 +606,6 @@ async function cargarEquiposDisponibles() {
 
 // ============================================================
 // PINTAR EQUIPOS DISPONIBLES
-// Sin columnas adicionales de Retorno ni Acción.
-// El botón Agregar va dentro de la columna Equipo.
 // ============================================================
 
 function pintarEquiposDisponibles() {
@@ -669,7 +668,12 @@ async function agregarEquipo(equipo) {
         .insert({
             evento_id: eventoActual.id,
             equipo_id: equipo.id,
-            salida_registrada: new Date().toISOString(),
+
+            // HU10:
+            // El coordinador agrega el equipo, pero NO registra su salida.
+            // El técnico marcará la salida desde su propia pantalla.
+            salida_registrada: null,
+
             retorno_registrado: null,
             pendiente_envio: false
         })
