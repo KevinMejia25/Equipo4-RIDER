@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Registrar retorno</title>
+  <link rel="stylesheet" href="/estilos/ui.css">
+
+  <style>
+    .retorno-contenedor {
+      width: min(100%, 560px);
+      margin: 0 auto;
+      padding: var(--e-4);
+    }
+
+    .retorno-equipo {
+      margin-bottom: var(--e-4);
+    }
+
+    .retorno-equipo__clave {
+      color: #a5b4fc;
+      font-size: var(--t-xs);
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    .retorno-equipo__nombre {
+      font-size: var(--t-base);
+      font-weight: 700;
+      margin: 5px 0;
+    }
+
+    .retorno-equipo__salida {
+      font-size: var(--t-xs);
+      color: var(--color-texto-suave);
+    }
+
+    .retorno-campo {
+      margin-top: var(--e-3);
+    }
+
+    .retorno-campo label {
+      display: block;
+      font-size: var(--t-sm);
+      font-weight: 600;
+      margin-bottom: var(--e-2);
+    }
+
+    .retorno-campo select,
+    .retorno-campo textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid var(--color-borde);
+      border-radius: var(--radio);
+      background: var(--color-fondo);
+      color: var(--color-texto);
+      font: inherit;
+    }
+
+    .retorno-campo textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .retorno-ayuda {
+      display: block;
+      margin-top: 7px;
+      color: var(--color-texto-suave);
+      font-size: var(--t-xs);
+    }
+
+    .retorno-boton {
+      width: 100%;
+      margin-top: var(--e-4);
+    }
+  </style>
+</head>
+
+<body>
+  <header class="barra">
+    <h1 class="barra__titulo">RIDER</h1>
+    <div class="barra__acciones">
+      <span class="pequeno tenue">Técnico de campo</span>
+      <a class="btn btn--fantasma" id="btn-salir" href="/login.html">
+        Salir
+      </a>
+    </div>
+  </header>
+
+  <main class="retorno-contenedor">
+    <p class="mb-3">
+      <a class="btn btn--fantasma" id="enlace-volver"
+         href="/tecnico-hoja-carga.html">
+        ‹ Volver a hoja de carga
+      </a>
+    </p>
+
+    <h1>Registrar retorno</h1>
+    <p class="pequeno tenue mb-4" id="evento-nombre">Cargando evento...</p>
+
+    <div id="estado-cargando">
+      <div class="esqueleto esqueleto--tarjeta"></div>
+    </div>
+
+    <div class="estado-error oculto" id="estado-error">
+      <p class="estado-error__titulo" id="error-titulo">
+        No pudimos cargar el equipo
+      </p>
+      <p class="estado-error__texto" id="error-texto">
+        Revisa tu conexión e inténtalo de nuevo.
+      </p>
+    </div>
+
+    <section class="tarjeta oculto" id="formulario-retorno">
+      <div class="retorno-equipo">
+        <p class="retorno-equipo__clave mb-0" id="equipo-clave"></p>
+        <p class="retorno-equipo__nombre" id="equipo-nombre"></p>
+        <p class="retorno-equipo__salida mb-0" id="equipo-salida"></p>
+      </div>
+
+      <form id="form-retorno">
+        <div class="retorno-campo">
+          <label for="condicion-retorno">Condición al regresar *</label>
+          <select id="condicion-retorno" required>
+            <option value="">Seleccionar condición</option>
+            <option value="buen_estado">Buen estado</option>
+            <option value="dañado">Dañado</option>
+            <option value="faltante">Faltante</option>
+          </select>
+          <span class="retorno-ayuda">
+            Opciones: Buen estado · Dañado · Faltante
+          </span>
+        </div>
+
+        <div class="retorno-campo">
+          <label for="nota-retorno">Notas (opcional)</label>
+          <textarea id="nota-retorno"
+            maxlength="1000"
+            placeholder="Describe daños, piezas faltantes o cualquier observación..."></textarea>
+        </div>
+
+        <div class="aviso aviso--error oculto" id="error-guardar"
+             role="alert"></div>
+
+        <button class="btn retorno-boton" id="btn-guardar" type="submit">
+          Guardar retorno
+        </button>
+      </form>
+    </section>
+
+    <p class="pequeno tenue mt-3" id="aviso-sincronizacion">
+      El retorno se guardará en el dispositivo y se enviará cuando haya conexión.
+    </p>
+  </main>
+
+  <script type="module" src="/tecnico-registrar-retorno.js"></script>
+</body>
+</html>

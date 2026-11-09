@@ -49,7 +49,10 @@ const ESTADOS_EDITABLES = ['cotizado', 'confirmado'];
 const MAPA_CONDICION = {
     bueno: 'Bueno',
     regular: 'Regular',
-    malo: 'Malo'
+    malo: 'Malo',
+    buen_estado: 'Buen estado',
+    dañado: 'Dañado',
+    faltante: 'Faltante'
 };
 
 // ============================================================
@@ -58,7 +61,6 @@ const MAPA_CONDICION = {
 
 function obtenerEventoId() {
     const params = new URLSearchParams(window.location.search);
-
     return params.get('id') || params.get('evento_id');
 }
 
@@ -73,15 +75,11 @@ function escaparHTML(valor) {
 }
 
 function formatearFecha(fecha) {
-    if (!fecha) {
-        return '—';
-    }
+    if (!fecha) return '—';
 
     const fechaObj = new Date(fecha);
 
-    if (Number.isNaN(fechaObj.getTime())) {
-        return '—';
-    }
+    if (Number.isNaN(fechaObj.getTime())) return '—';
 
     return fechaObj.toLocaleString('es-MX', {
         dateStyle: 'short',
@@ -89,28 +87,17 @@ function formatearFecha(fecha) {
     });
 }
 
-function convertirAInputFecha(fecha) {
-    if (!fecha) {
-        return '';
-    }
-
-    const fechaObj = new Date(fecha);
-
-    if (Number.isNaN(fechaObj.getTime())) {
-        return '';
-    }
-
-    const pad = numero => String(numero).padStart(2, '0');
-
-    return `${fechaObj.getFullYear()}-${pad(fechaObj.getMonth() + 1)}-${pad(fechaObj.getDate())}T${pad(fechaObj.getHours())}:${pad(fechaObj.getMinutes())}`;
-}
-
 function obtenerCondicion(equipo) {
     const condicion = equipo?.condicion;
 
-    if (!condicion) {
-        return 'Sin especificar';
-    }
+    if (!condicion) return 'Sin especificar';
+
+    return MAPA_CONDICION[String(condicion).toLowerCase()]
+        || condicion;
+}
+
+function obtenerCondicionRetorno(condicion) {
+    if (!condicion) return 'Sin registrar';
 
     return MAPA_CONDICION[String(condicion).toLowerCase()]
         || condicion;
@@ -122,13 +109,8 @@ function eventoEsEditable() {
 }
 
 function mostrarError(titulo, texto) {
-    if (errorTitulo) {
-        errorTitulo.textContent = titulo;
-    }
-
-    if (errorTexto) {
-        errorTexto.textContent = texto;
-    }
+    if (errorTitulo) errorTitulo.textContent = titulo;
+    if (errorTexto) errorTexto.textContent = texto;
 
     estadoCargando?.classList.add('oculto');
     estadoConDatos?.classList.add('oculto');
@@ -148,9 +130,7 @@ function actualizarFondoModal() {
 }
 
 function abrirModal() {
-    if (!eventoEsEditable()) {
-        return;
-    }
+    if (!eventoEsEditable()) return;
 
     modalBorrado?.classList.add('oculto');
     modalEquipo?.classList.remove('oculto');
@@ -170,28 +150,30 @@ function cerrarModal() {
 }
 
 function abrirModalBorrado(asignacionId) {
-    if (!eventoEsEditable()) {
-        return;
-    }
+    if (!eventoEsEditable()) return;
 
     const asignacion = equiposAsignados.find(
         item => item.id === asignacionId
     );
 
-    if (!asignacion) {
+    if (!asignacion) return;
+
+    // Evita quitar equipos que ya tienen movimientos.
+    if (asignacion.salida_registrada || asignacion.retorno_registrado) {
+        alert('No puedes quitar un equipo que ya tiene una salida o retorno registrado.');
         return;
     }
 
     asignacionPendienteBorrar = asignacionId;
 
-    nombreEquipoBorrado.textContent =
-        asignacion.equipos?.nombre || 'Equipo sin nombre';
+    if (nombreEquipoBorrado) {
+        nombreEquipoBorrado.textContent =
+            asignacion.equipos?.nombre || 'Equipo sin nombre';
+    }
 
     errorBorrado?.classList.add('oculto');
 
-    if (errorBorrado) {
-        errorBorrado.textContent = '';
-    }
+    if (errorBorrado) errorBorrado.textContent = '';
 
     btnConfirmarBorrado.disabled = false;
     btnConfirmarBorrado.textContent = 'Sí, quitar equipo';
@@ -203,9 +185,7 @@ function abrirModalBorrado(asignacionId) {
 }
 
 function cerrarModalBorrado() {
-    if (btnConfirmarBorrado?.disabled) {
-        return;
-    }
+    if (btnConfirmarBorrado?.disabled) return;
 
     modalBorrado?.classList.add('oculto');
     asignacionPendienteBorrar = null;
@@ -214,9 +194,7 @@ function cerrarModalBorrado() {
 }
 
 function mostrarErrorBorrado(mensaje) {
-    if (!errorBorrado) {
-        return;
-    }
+    if (!errorBorrado) return;
 
     errorBorrado.textContent = mensaje;
     errorBorrado.classList.remove('oculto');
@@ -284,9 +262,7 @@ function pintarEvento(evento) {
     Object.entries(elementos).forEach(([id, valor]) => {
         const elemento = document.getElementById(id);
 
-        if (elemento) {
-            elemento.textContent = valor;
-        }
+        if (elemento) elemento.textContent = valor;
     });
 
     const volverEvento = document.getElementById('volver-evento');
@@ -302,9 +278,7 @@ function pintarEvento(evento) {
 // ============================================================
 
 function actualizarPermisos() {
-    if (!eventoActual) {
-        return;
-    }
+    if (!eventoActual) return;
 
     const editable = eventoEsEditable();
 
@@ -313,10 +287,6 @@ function actualizarPermisos() {
 
     document.querySelectorAll('.btn-quitar-equipo').forEach(boton => {
         boton.classList.toggle('oculto', !editable);
-    });
-
-    document.querySelectorAll('.retorno-equipo').forEach(input => {
-        input.disabled = !editable;
     });
 }
 
@@ -366,9 +336,7 @@ async function cargarEquiposAsignados(eventoId) {
 // ============================================================
 
 function pintarEquiposAsignados() {
-    if (!tablaEquipoBody) {
-        return;
-    }
+    if (!tablaEquipoBody) return;
 
     tablaEquipoBody.innerHTML = '';
 
@@ -395,8 +363,11 @@ function pintarEquiposAsignados() {
     equiposAsignados.forEach(asignacion => {
         const equipo = asignacion.equipos;
         const fila = document.createElement('tr');
-        const fechaRetorno = convertirAInputFecha(
-            asignacion.retorno_registrado
+
+        const salida = formatearFecha(asignacion.salida_registrada);
+        const retorno = formatearFecha(asignacion.retorno_registrado);
+        const condicionRetorno = obtenerCondicionRetorno(
+            asignacion.condicion_retorno
         );
 
         fila.innerHTML = `
@@ -420,43 +391,38 @@ function pintarEquiposAsignados() {
 
             <td>
                 <span class="pequeno">
-                    ${escaparHTML(formatearFecha(asignacion.salida_registrada))}
+                    ${escaparHTML(salida)}
                 </span>
             </td>
 
-            <td class="retorno-celda">
-                <label
-                    class="retorno-etiqueta"
-                    for="retorno-${escaparHTML(asignacion.id)}"
-                >
-                    <span aria-hidden="true">📅</span>
-                    Fecha y hora de devolución
-                </label>
+            <td>
+                <div class="retorno-informacion">
+                    <span class="pequeno">
+                        ${escaparHTML(retorno)}
+                    </span>
 
-                <input
-                    id="retorno-${escaparHTML(asignacion.id)}"
-                    type="datetime-local"
-                    class="retorno-equipo"
-                    data-id="${escaparHTML(asignacion.id)}"
-                    value="${escaparHTML(fechaRetorno)}"
-                    aria-label="Fecha y hora de retorno de ${escaparHTML(equipo?.nombre || 'equipo')}"
-                >
+                    <span class="pequeno">
+                        Condición: ${escaparHTML(condicionRetorno)}
+                    </span>
 
-                <span class="retorno-ayuda">
-                    Se guarda al cambiar la fecha.
-                </span>
+                    ${
+                        asignacion.nota
+                            ? `<span class="pequeno">Nota: ${escaparHTML(asignacion.nota)}</span>`
+                            : ''
+                    }
 
-                <span
-                    class="retorno-estado"
-                    id="retorno-estado-${escaparHTML(asignacion.id)}"
-                    aria-live="polite"
-                ></span>
+                    ${
+                        asignacion.pendiente_envio
+                            ? '<span class="etiqueta etiqueta--pendiente">Pendiente de sincronizar</span>'
+                            : ''
+                    }
+                </div>
             </td>
 
             <td>
                 <button
                     type="button"
-                    class="btn btn--pequeno btn--secundario btn-quitar-equipo btn-borrar-equipo"
+                    class="btn btn--pequeno btn--secundario btn-quitar-equipo"
                     data-id="${escaparHTML(asignacion.id)}"
                 >
                     Quitar
@@ -471,81 +437,6 @@ function pintarEquiposAsignados() {
 }
 
 // ============================================================
-// GUARDAR FECHA DE RETORNO
-// ============================================================
-
-async function guardarRetorno(asignacionId, valorInput, input) {
-    if (!asignacionId || !eventoEsEditable()) {
-        return;
-    }
-
-    const asignacion = equiposAsignados.find(
-        item => item.id === asignacionId
-    );
-
-    if (!asignacion) {
-        return;
-    }
-
-    const estado = document.getElementById(
-        `retorno-estado-${asignacionId}`
-    );
-
-    const valorAnterior = asignacion.retorno_registrado;
-    let valorISO = null;
-
-    if (valorInput) {
-        const fecha = new Date(valorInput);
-
-        if (Number.isNaN(fecha.getTime())) {
-            if (estado) {
-                estado.textContent = 'Fecha no válida.';
-                estado.className = 'retorno-estado error';
-            }
-            return;
-        }
-
-        valorISO = fecha.toISOString();
-    }
-
-    input.disabled = true;
-
-    if (estado) {
-        estado.textContent = 'Guardando...';
-        estado.className = 'retorno-estado';
-    }
-
-    const { error } = await supabase
-        .from('evento_equipo')
-        .update({
-            retorno_registrado: valorISO
-        })
-        .eq('id', asignacionId);
-
-    input.disabled = !eventoEsEditable();
-
-    if (error) {
-        console.error('Error guardando retorno:', error);
-
-        input.value = convertirAInputFecha(valorAnterior);
-
-        if (estado) {
-            estado.textContent = 'No se pudo guardar. Inténtalo de nuevo.';
-            estado.className = 'retorno-estado error';
-        }
-
-        return;
-    }
-
-    asignacion.retorno_registrado = valorISO;
-
-    if (estado) {
-        estado.textContent = valorISO ? '✓ Fecha guardada' : '✓ Fecha eliminada';
-        estado.className = 'retorno-estado guardado';
-    }
-}
-
-// ============================================================
 // CARGAR EQUIPOS DISPONIBLES
 // ============================================================
 
@@ -555,9 +446,7 @@ async function cargarEquiposDisponibles() {
     modalVacio?.classList.add('oculto');
     modalError?.classList.add('oculto');
 
-    if (modalEquipoBody) {
-        modalEquipoBody.innerHTML = '';
-    }
+    if (modalEquipoBody) modalEquipoBody.innerHTML = '';
 
     const { data, error } = await supabase
         .from('equipos')
@@ -580,7 +469,8 @@ async function cargarEquiposDisponibles() {
         console.error('Error cargando equipos disponibles:', error);
 
         if (modalError) {
-            modalError.textContent = 'No se pudieron cargar los equipos. Inténtalo de nuevo.';
+            modalError.textContent =
+                'No se pudieron cargar los equipos. Inténtalo de nuevo.';
             modalError.classList.remove('oculto');
         }
 
@@ -609,9 +499,7 @@ async function cargarEquiposDisponibles() {
 // ============================================================
 
 function pintarEquiposDisponibles() {
-    if (!modalEquipoBody) {
-        return;
-    }
+    if (!modalEquipoBody) return;
 
     modalEquipoBody.innerHTML = '';
 
@@ -659,9 +547,7 @@ function pintarEquiposDisponibles() {
 // ============================================================
 
 async function agregarEquipo(equipo) {
-    if (!eventoEsEditable()) {
-        return false;
-    }
+    if (!eventoEsEditable()) return false;
 
     const { data, error } = await supabase
         .from('evento_equipo')
@@ -669,12 +555,12 @@ async function agregarEquipo(equipo) {
             evento_id: eventoActual.id,
             equipo_id: equipo.id,
 
-            // HU10:
-            // El coordinador agrega el equipo, pero NO registra su salida.
-            // El técnico marcará la salida desde su propia pantalla.
+            // El coordinador solamente asigna el equipo.
+            // El técnico registra la salida desde su hoja.
             salida_registrada: null,
-
             retorno_registrado: null,
+            condicion_retorno: null,
+            nota: null,
             pendiente_envio: false
         })
         .select(`
@@ -714,7 +600,6 @@ async function agregarEquipo(equipo) {
     equiposAsignados.push(data);
 
     pintarEquiposAsignados();
-
     await cargarEquiposDisponibles();
 
     return true;
@@ -725,7 +610,19 @@ async function agregarEquipo(equipo) {
 // ============================================================
 
 async function quitarEquipo(asignacionId) {
-    if (!eventoEsEditable()) {
+    if (!eventoEsEditable()) return false;
+
+    const asignacion = equiposAsignados.find(
+        item => item.id === asignacionId
+    );
+
+    if (
+        asignacion?.salida_registrada
+        || asignacion?.retorno_registrado
+    ) {
+        mostrarErrorBorrado(
+            'No puedes quitar un equipo que ya tiene una salida o retorno registrado.'
+        );
         return false;
     }
 
@@ -736,9 +633,11 @@ async function quitarEquipo(asignacionId) {
 
     if (error) {
         console.error('Error borrando equipo:', error);
+
         mostrarErrorBorrado(
             `No se pudo quitar el equipo. ${error.message}`
         );
+
         return false;
     }
 
@@ -747,16 +646,13 @@ async function quitarEquipo(asignacionId) {
     );
 
     pintarEquiposAsignados();
-
     await cargarEquiposDisponibles();
 
     return true;
 }
 
 async function confirmarBorrado() {
-    if (!asignacionPendienteBorrar || !eventoEsEditable()) {
-        return;
-    }
+    if (!asignacionPendienteBorrar || !eventoEsEditable()) return;
 
     btnConfirmarBorrado.disabled = true;
     btnConfirmarBorrado.textContent = 'Quitando...';
@@ -793,16 +689,8 @@ btnAgregarEquipo?.addEventListener('click', abrirModal);
 btnAgregarPrimerEquipo?.addEventListener('click', abrirModal);
 
 btnCerrarModal?.addEventListener('click', cerrarModal);
-
-btnCancelarBorrado?.addEventListener(
-    'click',
-    cerrarModalBorrado
-);
-
-btnConfirmarBorrado?.addEventListener(
-    'click',
-    confirmarBorrado
-);
+btnCancelarBorrado?.addEventListener('click', cerrarModalBorrado);
+btnConfirmarBorrado?.addEventListener('click', confirmarBorrado);
 
 modalOverlay?.addEventListener('click', () => {
     if (!modalBorrado?.classList.contains('oculto')) {
@@ -813,51 +701,31 @@ modalOverlay?.addEventListener('click', () => {
 });
 
 // ============================================================
-// EVENTOS DE LA TABLA DE EQUIPOS ASIGNADOS
+// EVENTOS DE LA TABLA
 // ============================================================
 
 tablaEquipoBody?.addEventListener('click', event => {
     const boton = event.target.closest('.btn-quitar-equipo');
 
-    if (!boton) {
-        return;
-    }
+    if (!boton) return;
 
     abrirModalBorrado(boton.dataset.id);
 });
 
-tablaEquipoBody?.addEventListener('change', async event => {
-    const input = event.target.closest('.retorno-equipo');
-
-    if (!input) {
-        return;
-    }
-
-    await guardarRetorno(
-        input.dataset.id,
-        input.value,
-        input
-    );
-});
-
 // ============================================================
-// EVENTOS DEL MODAL DE AGREGAR
+// EVENTOS DEL MODAL
 // ============================================================
 
 modalEquipoBody?.addEventListener('click', async event => {
     const boton = event.target.closest('.btn-agregar-equipo-modal');
 
-    if (!boton) {
-        return;
-    }
+    if (!boton) return;
 
     const equipo = equiposDisponibles.find(
         item => item.id === boton.dataset.id
     );
 
-    if (!equipo) {
-        return;
-    }
+    if (!equipo) return;
 
     boton.disabled = true;
     boton.textContent = 'Agregando...';
@@ -877,9 +745,7 @@ modalEquipoBody?.addEventListener('click', async event => {
 // ============================================================
 
 document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape') {
-        return;
-    }
+    if (event.key !== 'Escape') return;
 
     if (!modalBorrado?.classList.contains('oculto')) {
         cerrarModalBorrado();
@@ -887,6 +753,32 @@ document.addEventListener('keydown', event => {
         cerrarModal();
     }
 });
+
+// ============================================================
+// ACTUALIZAR DATOS DEL RETORNO
+// ============================================================
+
+// Si el técnico registra un retorno mientras el coordinador
+// tiene abierta la hoja, se actualiza la tabla automáticamente.
+supabase
+    .channel('cambios-evento-equipo')
+    .on(
+        'postgres_changes',
+        {
+            event: '*',
+            schema: 'public',
+            table: 'evento_equipo'
+        },
+        payload => {
+            if (
+                payload.new?.evento_id === eventoActual?.id
+                || payload.old?.evento_id === eventoActual?.id
+            ) {
+                cargarEquiposAsignados(eventoActual.id);
+            }
+        }
+    )
+    .subscribe();
 
 // ============================================================
 // INICIAR
@@ -900,7 +792,6 @@ async function iniciar() {
             'Evento no especificado',
             'No se recibió el ID del evento en la URL.'
         );
-
         return;
     }
 
@@ -914,6 +805,7 @@ async function iniciar() {
 
         estadoCargando?.classList.add('oculto');
         estadoConDatos?.classList.remove('oculto');
+
     } catch (error) {
         console.error('Error iniciando hoja de carga:', error);
 
