@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RIDER · Mis eventos</title>
+  <meta name="theme-color" content="#080F14">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/estilos/ui.css">
 </head>
 <body>
 
   <!-- Aviso de "sin conexión": se muestra cuando <body> lleva la clase
-       sin-conexion. Todavía nadie la pone; la activará la parte PWA. -->
+       sin-conexion (la pone pwa.js según el estado de la red). -->
   <div class="franja-offline" role="status">Sin conexión: se muestran los datos guardados</div>
 
   <header style="display:flex; align-items:center; justify-content:space-between; gap:var(--e-3);

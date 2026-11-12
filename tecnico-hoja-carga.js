@@ -1,3 +1,4 @@
+import './pwa.js';
 
 import { supabase } from './supabaseClient.js';
 import { exigirRol, cerrarSesion } from './guardia.js';
