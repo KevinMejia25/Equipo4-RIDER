@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RIDER · Registrar retorno</title>
+  <meta name="theme-color" content="#080F14">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/estilos/ui.css">
 
   <style>
@@ -79,6 +82,12 @@
 </head>
 
 <body>
+
+  <!-- Se muestra cuando <body> lleva la clase sin-conexion (la pone pwa.js). -->
+  <div class="franja-offline" role="status">
+    Sin conexión: el retorno se guarda en el teléfono y se envía al volver la señal
+  </div>
+
   <header class="barra">
     <h1 class="barra__titulo">RIDER</h1>
     <div class="barra__acciones">

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDER · Sin conexión</title>
+  <meta name="theme-color" content="#080F14">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/estilos/ui.css">
+</head>
+<body>
+
+  <!-- Esta página la entrega el service worker cuando abres una pantalla
+       que no está guardada en el dispositivo y no hay conexión. -->
+  <main style="padding:var(--e-5) var(--e-4)">
+    <div class="estado-vacio">
+      <p class="estado-vacio__icono" aria-hidden="true">📡</p>
+      <h1 class="estado-vacio__titulo">Sin conexión</h1>
+      <p class="estado-vacio__texto">
+        Esta pantalla todavía no está guardada en tu dispositivo.
+        Lo que ya habías abierto con conexión sí está disponible.
+      </p>
+      <a class="btn" href="/tecnico-eventos.html">Ir a Mis eventos</a>
+    </div>
+  </main>
+
+</body>
+</html>

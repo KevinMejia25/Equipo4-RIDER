@@ -1,3 +1,4 @@
+import './pwa.js';
 import { exigirRol, cerrarSesion } from './guardia.js';
 import { cargarMisEventos } from './datos-tecnico.js';
 

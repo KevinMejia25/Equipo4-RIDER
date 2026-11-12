@@ -1,3 +1,4 @@
+import './pwa.js';
 import { exigirRol, cerrarSesion } from './guardia.js';
 
 // Esta es la pantalla de inicio del coordinador. Sin sesión va al login;

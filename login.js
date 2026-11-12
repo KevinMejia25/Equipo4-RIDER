@@ -1,3 +1,4 @@
+import './pwa.js';
 import { supabase } from './supabaseClient.js';
 import { obtenerPerfil, rutaInicioPorRol, guardarPerfil } from './guardia.js';
 
