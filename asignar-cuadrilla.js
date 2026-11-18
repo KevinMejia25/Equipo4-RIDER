@@ -47,10 +47,14 @@ let eventoActual = null;
 let tecnicos = [];
 let asignacionesEvento = [];
 let asignacionesTodosEventos = [];
+let eventosCache = [];
 let asignacionPorQuitar = null;
 
+// Solo estos estados bloquean la disponibilidad.
+const ESTADOS_QUE_OCUPAN = ['confirmado', 'en_montaje'];
+
 // =====================================================
-// ESTADOS
+// ESTADOS Y AVISOS
 // =====================================================
 
 function mostrarSoloEstado(estado) {
@@ -87,17 +91,105 @@ function eventoEditable() {
 }
 
 // =====================================================
+// FECHAS Y DISPONIBILIDAD
+// =====================================================
+
+function obtenerFechaInicio(evento) {
+  return evento.fecha_montaje || evento.fecha_inicio || null;
+}
+
+function obtenerFechaFin(evento) {
+  return evento.fecha_fin || null;
+}
+
+function hayCruceDeFechas(eventoA, eventoB) {
+  const inicioA = obtenerFechaInicio(eventoA);
+  const finA = obtenerFechaFin(eventoA);
+  const inicioB = obtenerFechaInicio(eventoB);
+  const finB = obtenerFechaFin(eventoB);
+
+  // Si falta una fecha, no podemos confirmar que esté disponible.
+  // Por seguridad se considera ocupado.
+  if (!inicioA || !finA || !inicioB || !finB) {
+    return true;
+  }
+
+  const inicioAms = new Date(inicioA).getTime();
+  const finAms = new Date(finA).getTime();
+  const inicioBms = new Date(inicioB).getTime();
+  const finBms = new Date(finB).getTime();
+
+  if (
+    Number.isNaN(inicioAms) ||
+    Number.isNaN(finAms) ||
+    Number.isNaN(inicioBms) ||
+    Number.isNaN(finBms)
+  ) {
+    return true;
+  }
+
+  // Hay cruce cuando el inicio de uno ocurre antes
+  // de que termine el otro.
+  return inicioAms <= finBms && inicioBms <= finAms;
+}
+
+function tecnicoEstaOcupado(usuarioId, asignaciones, eventos) {
+  const asignacionesTecnico = asignaciones.filter(
+    asignacion =>
+      asignacion.usuario_id === usuarioId &&
+      asignacion.evento_id !== eventoId
+  );
+
+  for (const asignacion of asignacionesTecnico) {
+    const eventoAsignado = eventos.find(
+      evento => evento.id === asignacion.evento_id
+    );
+
+    // Si no encontramos el evento, bloqueamos por seguridad.
+    if (!eventoAsignado) {
+      return true;
+    }
+
+    // Cotizado, cerrado y cancelado no bloquean.
+    if (!ESTADOS_QUE_OCUPAN.includes(eventoAsignado.estado)) {
+      continue;
+    }
+
+    // Confirmado o en montaje bloquean únicamente
+    // cuando sus fechas se cruzan con el evento actual.
+    if (hayCruceDeFechas(eventoActual, eventoAsignado)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function obtenerTecnicosDisponibles(
+  asignaciones = asignacionesTodosEventos,
+  eventos = eventosCache
+) {
+  return tecnicos.filter(tecnico => {
+    if (tecnico.activo !== true || tecnico.rol !== 'tecnico') {
+      return false;
+    }
+
+    return !tecnicoEstaOcupado(tecnico.id, asignaciones, eventos);
+  });
+}
+
+// =====================================================
 // CERRAR SESIÓN
 // =====================================================
 
-document.getElementById('btn-salir').addEventListener('click', async (evento) => {
+document.getElementById('btn-salir').addEventListener('click', async evento => {
   evento.preventDefault();
   await supabase.auth.signOut();
   window.location.href = '/login.html';
 });
 
 // =====================================================
-// CARGAR EVENTO, TÉCNICOS Y ASIGNACIONES
+// CARGAR EVENTO, TÉCNICOS, ASIGNACIONES Y FECHAS
 // =====================================================
 
 async function cargarDatos() {
@@ -113,29 +205,33 @@ async function cargarDatos() {
   ocultarAviso();
 
   try {
-    const [resEvento, resTecnicos, resAsignaciones] = await Promise.all([
-      supabase
-        .from('eventos')
-        .select('id, nombre, estado')
-        .eq('id', eventoId)
-        .maybeSingle(),
+    const [resEvento, resTecnicos, resAsignaciones, resEventos] =
+      await Promise.all([
+        supabase
+          .from('eventos')
+          .select('id, nombre, estado, fecha_montaje, fecha_inicio, fecha_fin')
+          .eq('id', eventoId)
+          .maybeSingle(),
 
-      supabase
-        .from('usuarios')
-        .select('id, nombre, correo, rol, telefono, activo')
-        .eq('rol', 'tecnico')
-        .order('nombre', { ascending: true }),
+        supabase
+          .from('usuarios')
+          .select('id, nombre, correo, rol, telefono, activo')
+          .eq('rol', 'tecnico')
+          .order('nombre', { ascending: true }),
 
-      // Se consultan todas las asignaciones para saber qué técnicos
-      // ya están ocupados en otros eventos.
-      supabase
-        .from('evento_personal')
-        .select('id, evento_id, usuario_id, funcion')
-    ]);
+        supabase
+          .from('evento_personal')
+          .select('id, evento_id, usuario_id, funcion'),
+
+        supabase
+          .from('eventos')
+          .select('id, estado, fecha_montaje, fecha_inicio, fecha_fin')
+      ]);
 
     if (resEvento.error) throw resEvento.error;
     if (resTecnicos.error) throw resTecnicos.error;
     if (resAsignaciones.error) throw resAsignaciones.error;
+    if (resEventos.error) throw resEventos.error;
 
     if (!resEvento.data) {
       mostrarError(
@@ -148,9 +244,10 @@ async function cargarDatos() {
     eventoActual = resEvento.data;
     tecnicos = resTecnicos.data ?? [];
     asignacionesTodosEventos = resAsignaciones.data ?? [];
+    eventosCache = resEventos.data ?? [];
 
     asignacionesEvento = asignacionesTodosEventos.filter(
-      (asignacion) => asignacion.evento_id === eventoId
+      asignacion => asignacion.evento_id === eventoId
     );
 
     elNombreEvento.textContent = eventoActual.nombre;
@@ -194,17 +291,9 @@ function pintarTecnicosDisponibles() {
   opcionInicial.textContent = 'Selecciona un técnico';
   elSelectTecnico.appendChild(opcionInicial);
 
-  // Un técnico ocupado en cualquier evento visible no se ofrece
-  // como disponible para una nueva asignación.
-  const idsOcupados = new Set(
-    asignacionesTodosEventos.map((asignacion) => asignacion.usuario_id)
-  );
+  const disponibles = obtenerTecnicosDisponibles();
 
-  const disponibles = tecnicos.filter((tecnico) => {
-    return tecnico.activo === true && !idsOcupados.has(tecnico.id);
-  });
-
-  disponibles.forEach((tecnico) => {
+  disponibles.forEach(tecnico => {
     const opcion = document.createElement('option');
     opcion.value = tecnico.id;
     opcion.textContent = tecnico.nombre;
@@ -220,10 +309,10 @@ function pintarTecnicosDisponibles() {
     elBotonAgregar.disabled = true;
 
     elAyudaTecnicos.textContent =
-      'Los técnicos asignados a otros eventos no aparecen disponibles.';
+      'Los técnicos asignados a eventos confirmados o en montaje con fechas cruzadas no aparecen disponibles.';
   } else {
     elAyudaTecnicos.textContent =
-      'Solo aparecen técnicos activos que no estén asignados a otro evento.';
+      'Solo aparecen técnicos activos que no tengan cruces de fechas con eventos confirmados o en montaje.';
 
     elSelectTecnico.disabled = !eventoEditable();
     elBotonAgregar.disabled = !eventoEditable();
@@ -238,10 +327,10 @@ function pintarCuadrilla() {
   elCuadrillaBody.replaceChildren();
 
   const tecnicosPorId = new Map(
-    tecnicos.map((tecnico) => [tecnico.id, tecnico])
+    tecnicos.map(tecnico => [tecnico.id, tecnico])
   );
 
-  asignacionesEvento.forEach((asignacion) => {
+  asignacionesEvento.forEach(asignacion => {
     const tecnico = tecnicosPorId.get(asignacion.usuario_id);
     const tr = document.createElement('tr');
 
@@ -278,7 +367,7 @@ function pintarCuadrilla() {
 // AGREGAR TÉCNICO
 // =====================================================
 
-elFormulario.addEventListener('submit', async (evento) => {
+elFormulario.addEventListener('submit', async evento => {
   evento.preventDefault();
   ocultarAviso();
 
@@ -300,18 +389,7 @@ elFormulario.addEventListener('submit', async (evento) => {
     return;
   }
 
-  // Verificación inmediata contra los datos cargados.
-  const yaOcupado = asignacionesTodosEventos.some(
-    (asignacion) => asignacion.usuario_id === usuarioId
-  );
-
-  if (yaOcupado) {
-    mostrarAviso('Este técnico ya está asignado a un evento. Actualiza la página.');
-    await cargarDatos();
-    return;
-  }
-
-  const tecnico = tecnicos.find((item) => item.id === usuarioId);
+  const tecnico = tecnicos.find(item => item.id === usuarioId);
 
   if (!tecnico || tecnico.activo !== true || tecnico.rol !== 'tecnico') {
     mostrarAviso('El técnico ya no está disponible.');
@@ -320,20 +398,36 @@ elFormulario.addEventListener('submit', async (evento) => {
   }
 
   elBotonAgregar.disabled = true;
-  elBotonAgregar.textContent = 'Guardando...';
+  elBotonAgregar.textContent = 'Verificando...';
 
   try {
-    // Segunda comprobación para reducir la posibilidad de duplicados.
-    const { data: existentes, error: errorExistentes } = await supabase
-      .from('evento_personal')
-      .select('id, evento_id')
-      .eq('usuario_id', usuarioId);
+    // Volvemos a consultar las asignaciones y los eventos
+    // para comprobar la disponibilidad antes de guardar.
+    const [resAsignaciones, resEventos] = await Promise.all([
+      supabase
+        .from('evento_personal')
+        .select('id, evento_id, usuario_id, funcion'),
 
-    if (errorExistentes) throw errorExistentes;
+      supabase
+        .from('eventos')
+        .select('id, estado, fecha_montaje, fecha_inicio, fecha_fin')
+    ]);
 
-    if (existentes?.length) {
+    if (resAsignaciones.error) throw resAsignaciones.error;
+    if (resEventos.error) throw resEventos.error;
+
+    const asignacionesActualizadas = resAsignaciones.data ?? [];
+    const eventosActualizados = resEventos.data ?? [];
+
+    const ocupado = tecnicoEstaOcupado(
+      usuarioId,
+      asignacionesActualizadas,
+      eventosActualizados
+    );
+
+    if (ocupado) {
       mostrarAviso(
-        'Este técnico ya tiene una asignación registrada y no aparece disponible.'
+        'Este técnico está ocupado en otro evento confirmado o en montaje durante esas fechas.'
       );
       await cargarDatos();
       return;
@@ -362,7 +456,7 @@ elFormulario.addEventListener('submit', async (evento) => {
 
     mostrarAviso(
       error.code === '23505'
-        ? 'Este técnico ya está asignado a un evento.'
+        ? 'Este técnico ya está asignado a este evento.'
         : error.message || 'No se pudo guardar la asignación.'
     );
 
@@ -372,15 +466,8 @@ elFormulario.addEventListener('submit', async (evento) => {
     elBotonAgregar.textContent = '+ Agregar a la cuadrilla';
 
     if (eventoEditable()) {
-      const idsOcupados = new Set(
-        asignacionesTodosEventos.map((item) => item.usuario_id)
-      );
-
-      const hayDisponibles = tecnicos.some(
-        (item) => item.activo === true && !idsOcupados.has(item.id)
-      );
-
-      elBotonAgregar.disabled = !hayDisponibles;
+      const disponibles = obtenerTecnicosDisponibles();
+      elBotonAgregar.disabled = disponibles.length === 0;
     }
   }
 });
@@ -411,15 +498,13 @@ function cerrarModalQuitar() {
 
 btnCancelarQuitar.addEventListener('click', cerrarModalQuitar);
 
-// Cerrar si se pulsa fuera del cuadro.
-elModal.addEventListener('click', (evento) => {
+elModal.addEventListener('click', evento => {
   if (evento.target === elModal) {
     cerrarModalQuitar();
   }
 });
 
-// Cerrar con Escape.
-document.addEventListener('keydown', (evento) => {
+document.addEventListener('keydown', evento => {
   if (evento.key === 'Escape' && !elModal.classList.contains('oculto')) {
     cerrarModalQuitar();
   }
@@ -447,7 +532,7 @@ btnConfirmarQuitar.addEventListener('click', async () => {
     await cargarDatos();
 
     mostrarAviso(
-      'El técnico se quitó de la cuadrilla y quedó disponible si no tiene otras asignaciones.',
+      'El técnico se quitó de la cuadrilla y quedó disponible si no tiene otras asignaciones que coincidan en fechas.',
       'exito'
     );
 
