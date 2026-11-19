@@ -1,333 +1,252 @@
 import './pwa.js';
 
-import { supabase } from './supabaseClient.js';
 import { exigirRol, cerrarSesion } from './guardia.js';
+import { cargarHoja } from './datos-tecnico.js';
+
+import {
+    guardarAccionOffline,
+    sincronizarPendientes,
+    obtenerCantidadPendiente
+} from './sincronizacion-tecnico.js';
 
 const perfil = await exigirRol('tecnico');
-
-document.getElementById('btn-salir')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  cerrarSesion();
-});
-
 const $ = (id) => document.getElementById(id);
 
-const eventoId = new URLSearchParams(location.search).get('evento_id');
-const asignacionId = new URLSearchParams(location.search).get('asignacion_id');
+$('btn-salir')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    cerrarSesion();
+});
 
-const dbNombre = 'RIDER_RETORNOS_PENDIENTES';
-const dbVersion = 1;
+const parametros = new URLSearchParams(location.search);
+const eventoId = parametros.get('evento_id') || parametros.get('id');
+const asignacionId = parametros.get('asignacion_id');
+
 let asignacionActual = null;
-let eventoActual = null;
 
-function abrirBaseLocal() {
-  return new Promise((resolve, reject) => {
-    const solicitud = indexedDB.open(dbNombre, dbVersion);
+function instalarEstilos() {
+    if ($('estilos-retorno-rider')) return;
 
-    solicitud.onupgradeneeded = () => {
-      const db = solicitud.result;
-
-      if (!db.objectStoreNames.contains('retornos')) {
-        db.createObjectStore('retornos', { keyPath: 'asignacion_id' });
-      }
-    };
-
-    solicitud.onsuccess = () => resolve(solicitud.result);
-    solicitud.onerror = () => reject(solicitud.error);
-  });
+    const style = document.createElement('style');
+    style.id = 'estilos-retorno-rider';
+    style.textContent = `
+        .retorno-contenedor { width:min(calc(100% - 32px),620px); margin:0 auto; padding:28px 0 48px; }
+        .retorno-contenedor > h1 { margin:12px 0 6px; font-size:clamp(25px,5vw,32px); }
+        #formulario-retorno {
+            margin-top:22px; padding:26px;
+            border:1px solid var(--color-borde,#293545);
+            border-radius:20px;
+            background:var(--color-tarjeta,#111923);
+            box-shadow:0 18px 50px rgba(0,0,0,.22);
+        }
+        .retorno-equipo {
+            padding:16px; margin-bottom:22px;
+            border:1px solid rgba(145,137,255,.22);
+            border-radius:13px; background:rgba(116,105,255,.08);
+        }
+        .retorno-equipo__clave { color:#aaa5ff; font-size:11px; font-weight:800; letter-spacing:.8px; }
+        .retorno-equipo__nombre { font-size:18px; font-weight:750; margin:6px 0; overflow-wrap:anywhere; }
+        .retorno-equipo__salida { font-size:12px; color:var(--color-texto-suave,#9aa6b5); }
+        .retorno-campo { margin-top:18px; }
+        .retorno-campo label { display:block; margin-bottom:9px; font-size:13px; font-weight:700; }
+        .retorno-campo select,.retorno-campo textarea {
+            width:100%; box-sizing:border-box; padding:13px 14px;
+            border:1px solid var(--color-borde,#293545); border-radius:11px;
+            background:var(--color-fondo,#0b121a); color:var(--color-texto,#f4f5f8);
+            font:inherit; outline:none;
+        }
+        .retorno-campo select:focus,.retorno-campo textarea:focus {
+            border-color:#817aff; box-shadow:0 0 0 3px rgba(116,105,255,.15);
+        }
+        .retorno-campo textarea { min-height:115px; resize:vertical; }
+        .retorno-ayuda { display:block; margin-top:8px; color:var(--color-texto-suave,#9aa6b5); font-size:11px; }
+        .retorno-boton { width:100%; margin-top:20px; min-height:48px; }
+        #aviso-sincronizacion { margin-top:15px; padding:12px 14px; border-radius:10px; background:rgba(116,105,255,.08); line-height:1.5; }
+        .retorno-toast {
+            position:fixed; z-index:10002; top:20px; left:50%;
+            width:max-content; max-width:calc(100% - 40px); padding:14px 18px;
+            border-radius:12px; background:#123329; border:1px solid #28775d;
+            color:#b7f4d9; font-size:13px; font-weight:650; text-align:center;
+            opacity:0; transform:translate(-50%,-12px); transition:.2s ease;
+        }
+        .retorno-toast.visible { opacity:1; transform:translate(-50%,0); }
+        @media(max-width:480px) { #formulario-retorno { padding:19px; border-radius:16px; } }
+    `;
+    document.head.appendChild(style);
 }
 
-async function guardarPendienteLocal(retorno) {
-  const db = await abrirBaseLocal();
+instalarEstilos();
 
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('retornos', 'readwrite');
-    tx.objectStore('retornos').put(retorno);
-
-    tx.oncomplete = () => {
-      db.close();
-      resolve(true);
-    };
-
-    tx.onerror = () => {
-      db.close();
-      reject(tx.error);
-    };
-  });
-}
-
-async function eliminarPendienteLocal(id) {
-  const db = await abrirBaseLocal();
-
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('retornos', 'readwrite');
-    tx.objectStore('retornos').delete(id);
-
-    tx.oncomplete = () => {
-      db.close();
-      resolve(true);
-    };
-
-    tx.onerror = () => {
-      db.close();
-      reject(tx.error);
-    };
-  });
-}
-
-async function obtenerPendienteLocal(id) {
-  const db = await abrirBaseLocal();
-
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('retornos', 'readonly');
-    const solicitud = tx.objectStore('retornos').get(id);
-
-    solicitud.onsuccess = () => {
-      const resultado = solicitud.result ?? null;
-      db.close();
-      resolve(resultado);
-    };
-
-    solicitud.onerror = () => {
-      db.close();
-      reject(solicitud.error);
-    };
-  });
+function notificar(mensaje) {
+    document.querySelector('.retorno-toast')?.remove();
+    const aviso = document.createElement('div');
+    aviso.className = 'retorno-toast';
+    aviso.setAttribute('role', 'status');
+    aviso.textContent = mensaje;
+    document.body.appendChild(aviso);
+    requestAnimationFrame(() => aviso.classList.add('visible'));
+    setTimeout(() => {
+        aviso.classList.remove('visible');
+        setTimeout(() => aviso.remove(), 250);
+    }, 4000);
 }
 
 function mostrarError(titulo, mensaje) {
-  $('estado-cargando').classList.add('oculto');
-  $('formulario-retorno').classList.add('oculto');
-  $('estado-error').classList.remove('oculto');
-  $('error-titulo').textContent = titulo;
-  $('error-texto').textContent = mensaje;
+    $('estado-cargando').classList.add('oculto');
+    $('formulario-retorno').classList.add('oculto');
+    $('estado-error').classList.remove('oculto');
+    $('error-titulo').textContent = titulo;
+    $('error-texto').textContent = mensaje;
 }
 
 function formatearFecha(fecha) {
-  if (!fecha) return '—';
-
-  return new Date(fecha).toLocaleString('es-MX', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    if (!fecha) return '—';
+    const f = new Date(fecha);
+    if (Number.isNaN(f.getTime())) return '—';
+    return f.toLocaleString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 async function cargarAsignacion() {
-  if (!eventoId || !asignacionId) {
-    mostrarError(
-      'Faltan datos',
-      'Abre esta pantalla desde el botón Registrar retorno de tu hoja de carga.'
-    );
-    return;
-  }
+    if (!eventoId || !asignacionId) {
+        mostrarError('Faltan datos',
+            'Abre esta pantalla desde el botón Registrar retorno de tu hoja de carga.');
+        return;
+    }
 
-  const { data, error } = await supabase
-    .from('evento_equipo')
-    .select(`
-      id,
-      evento_id,
-      equipo_id,
-      salida_registrada,
-      retorno_registrado,
-      condicion_retorno,
-      nota,
-      eventos (
-        id,
-        nombre,
-        estado
-      ),
-      equipos (
-        clave,
-        nombre
-      )
-    `)
-    .eq('id', asignacionId)
-    .eq('evento_id', eventoId)
-    .maybeSingle();
+    const resultado = await cargarHoja(eventoId, perfil);
 
-  if (error) {
-    console.error(error);
-    mostrarError('No pudimos cargar el equipo', 'Revisa tu conexión e inténtalo de nuevo.');
-    return;
-  }
+    if (resultado.noExiste) {
+        mostrarError('Evento no disponible',
+            'No hay una copia de esta hoja en el dispositivo. Conéctate para descargarla primero.');
+        return;
+    }
 
-  if (!data) {
-    mostrarError('Equipo no encontrado', 'El equipo ya no pertenece a este evento.');
-    return;
-  }
+    const pieza = resultado.piezas.find((p) => p.id === asignacionId);
 
-  asignacionActual = data;
-  eventoActual = data.eventos;
+    if (!pieza) {
+        mostrarError('Equipo no encontrado',
+            'El equipo ya no aparece en la hoja de carga.');
+        return;
+    }
 
-  if (eventoActual?.estado !== 'en_montaje') {
-    mostrarError(
-      'Retorno no disponible',
-      'El retorno solo se puede registrar cuando el evento está en montaje.'
-    );
-    return;
-  }
+    if (resultado.evento?.estado !== 'en_montaje') {
+        mostrarError('Retorno no disponible',
+            'El retorno solo se puede registrar cuando el evento está en montaje.');
+        return;
+    }
 
-  if (!data.salida_registrada) {
-    mostrarError(
-      'Salida pendiente',
-      'Primero debe registrarse la salida del equipo.'
-    );
-    return;
-  }
+    if (!pieza.salida_registrada) {
+        mostrarError('Salida pendiente',
+            'Primero debe registrarse la salida del equipo.');
+        return;
+    }
 
-  if (data.retorno_registrado) {
-    mostrarError(
-      'Retorno ya registrado',
-      'Este equipo ya tiene un retorno registrado.'
-    );
-    return;
-  }
+    if (pieza.retorno_registrado) {
+        mostrarError('Retorno ya registrado',
+            'Este equipo ya tiene un retorno registrado.');
+        return;
+    }
 
-  $('evento-nombre').textContent = data.eventos?.nombre ?? 'Evento';
-  $('equipo-clave').textContent = data.equipos?.clave ?? 'Sin clave';
-  $('equipo-nombre').textContent = data.equipos?.nombre ?? 'Equipo';
-  $('equipo-salida').textContent =
-    `Salida registrada · ${formatearFecha(data.salida_registrada)}`;
+    asignacionActual = pieza;
 
-  $('estado-cargando').classList.add('oculto');
-  $('formulario-retorno').classList.remove('oculto');
+    $('evento-nombre').textContent = resultado.evento?.nombre ?? 'Evento';
+    $('equipo-clave').textContent = pieza.clave ?? 'Sin clave';
+    $('equipo-nombre').textContent = pieza.nombre ?? 'Equipo';
+    $('equipo-salida').textContent =
+        `Salida registrada · ${formatearFecha(pieza.salida_registrada)}`;
 
-  $('enlace-volver').href =
-    `/tecnico-hoja-carga.html?evento_id=${encodeURIComponent(eventoId)}`;
+    $('estado-cargando').classList.add('oculto');
+    $('formulario-retorno').classList.remove('oculto');
+
+    $('enlace-volver').href =
+        `/tecnico-hoja-carga.html?evento_id=${encodeURIComponent(eventoId)}`;
+
+    actualizarAviso();
 }
 
-async function sincronizarRetorno(retorno) {
-  const { data, error } = await supabase
-    .from('evento_equipo')
-    .update({
-      retorno_registrado: retorno.retorno_registrado,
-      condicion_retorno: retorno.condicion_retorno,
-      nota: retorno.nota,
-      pendiente_envio: false
-    })
-    .eq('id', retorno.asignacion_id)
-    .eq('evento_id', retorno.evento_id)
-    .is('retorno_registrado', null)
-    .select('id')
-    .maybeSingle();
-
-  if (error) throw error;
-
-  if (!data) {
-    throw new Error('El retorno ya fue registrado o el equipo cambió de estado.');
-  }
-
-  return true;
+function actualizarAviso() {
+    $('aviso-sincronizacion').textContent = navigator.onLine
+        ? 'El retorno se guardará y se enviará a Supabase. Si se pierde la conexión, quedará guardado en este dispositivo.'
+        : 'Sin conexión: el retorno se guardará en este dispositivo y se enviará cuando vuelva internet.';
 }
 
 async function guardarRetorno(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  const condicion = $('condicion-retorno').value;
-  const nota = $('nota-retorno').value.trim();
+    const condicion = $('condicion-retorno').value;
+    const nota = $('nota-retorno').value.trim();
 
-  if (!condicion) {
-    $('error-guardar').textContent = 'Selecciona la condición del equipo.';
-    $('error-guardar').classList.remove('oculto');
-    return;
-  }
-
-  const boton = $('btn-guardar');
-  boton.disabled = true;
-  boton.textContent = 'Guardando…';
-  $('error-guardar').classList.add('oculto');
-
-  const retorno = {
-    asignacion_id: asignacionActual.id,
-    evento_id: eventoId,
-    retorno_registrado: new Date().toISOString(),
-    condicion_retorno: condicion,
-    nota,
-    pendiente_envio: true,
-    usuario_id: perfil.id ?? null,
-    guardado_local: new Date().toISOString()
-  };
-
-  try {
-    if (navigator.onLine) {
-      await sincronizarRetorno(retorno);
-      await eliminarPendienteLocal(asignacionActual.id);
-      mostrarExito('Retorno registrado correctamente.');
-      return;
+    if (!condicion) {
+        $('error-guardar').textContent = 'Selecciona la condición del equipo.';
+        $('error-guardar').classList.remove('oculto');
+        return;
     }
 
-    await guardarPendienteLocal(retorno);
-    mostrarExito('Retorno guardado en este dispositivo. Se enviará cuando haya conexión.');
-  } catch (error) {
-    console.error('Error guardando retorno:', error);
+    const boton = $('btn-guardar');
+    boton.disabled = true;
+    boton.textContent = 'Guardando...';
+    $('error-guardar').classList.add('oculto');
 
     try {
-      await guardarPendienteLocal(retorno);
-      mostrarExito('Retorno guardado localmente. Quedó pendiente de sincronización.');
-    } catch (errorLocal) {
-      console.error(errorLocal);
-      $('error-guardar').textContent =
-        'No se pudo guardar el retorno. Inténtalo nuevamente.';
-      $('error-guardar').classList.remove('oculto');
-      boton.disabled = false;
-      boton.textContent = 'Guardar retorno';
-    }
-  }
-}
+        await guardarAccionOffline({
+            tipo: 'retorno',
+            pieza: asignacionActual,
+            eventoId,
+            perfil,
+            condicion_retorno: condicion,
+            nota
+        });
 
-function mostrarExito(mensaje) {
-  $('formulario-retorno').classList.add('oculto');
+        if (navigator.onLine) await sincronizarPendientes();
 
-  const aviso = document.createElement('div');
-  aviso.className = 'aviso aviso--exito';
-  aviso.textContent = mensaje;
+        const pendientes = await obtenerCantidadPendiente();
+        $('formulario-retorno').classList.add('oculto');
 
-  $('formulario-retorno').after(aviso);
+        notificar(navigator.onLine
+            ? `Retorno guardado correctamente. Pendientes de enviar: ${pendientes}.`
+            : `Retorno guardado en este dispositivo. Pendientes de enviar: ${pendientes}.`);
 
-  const enlace = document.createElement('a');
-  enlace.className = 'btn retorno-boton';
-  enlace.href = `/tecnico-hoja-carga.html?evento_id=${encodeURIComponent(eventoId)}`;
-  enlace.textContent = 'Volver a hoja de carga';
+        const enlace = document.createElement('a');
+        enlace.className = 'btn retorno-boton';
+        enlace.href = `/tecnico-hoja-carga.html?evento_id=${encodeURIComponent(eventoId)}`;
+        enlace.textContent = 'Volver a hoja de carga';
+        $('aviso-sincronizacion').before(enlace);
 
-  aviso.after(enlace);
-}
-
-async function sincronizarPendientes() {
-  if (!navigator.onLine) return;
-
-  const db = await abrirBaseLocal();
-
-  const pendientes = await new Promise((resolve, reject) => {
-    const tx = db.transaction('retornos', 'readonly');
-    const solicitud = tx.objectStore('retornos').getAll();
-
-    solicitud.onsuccess = () => resolve(solicitud.result ?? []);
-    solicitud.onerror = () => reject(solicitud.error);
-  });
-
-  db.close();
-
-  for (const retorno of pendientes) {
-    try {
-      await sincronizarRetorno(retorno);
-      await eliminarPendienteLocal(retorno.asignacion_id);
     } catch (error) {
-      console.error('No se pudo sincronizar el retorno:', error);
+        console.error('Error guardando retorno:', error);
+        $('error-guardar').textContent =
+            `No se pudo guardar localmente: ${error.message}`;
+        $('error-guardar').classList.remove('oculto');
+        boton.disabled = false;
+        boton.textContent = 'Intentar de nuevo';
     }
-  }
 }
 
 $('form-retorno').addEventListener('submit', guardarRetorno);
 
-window.addEventListener('online', sincronizarPendientes);
+window.addEventListener('online', async () => {
+    actualizarAviso();
+    try {
+        await sincronizarPendientes();
+    } catch (error) {
+        console.error('Error al sincronizar:', error);
+    }
+});
+
+window.addEventListener('offline', actualizarAviso);
 
 try {
-  await sincronizarPendientes();
-  await cargarAsignacion();
+    await sincronizarPendientes();
+    await cargarAsignacion();
 } catch (error) {
-  console.error(error);
-  mostrarError('No pudimos iniciar la pantalla', 'Revisa tu conexión e inténtalo de nuevo.');
+    console.error(error);
+    mostrarError(
+        'No pudimos iniciar la pantalla',
+        'No fue posible recuperar los datos guardados. Intenta nuevamente.'
+    );
 }

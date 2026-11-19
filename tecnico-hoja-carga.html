@@ -4,63 +4,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>RIDER · Hoja de carga</title>
+
   <meta name="theme-color" content="#080F14">
+
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/estilos/ui.css">
 
   <style>
-    .pieza-acciones {
+    body {
+      padding-bottom: 92px;
+    }
+
+    .barra-pendientes {
+      position: fixed;
+      z-index: 20;
+      left: 0;
+      right: 0;
+      bottom: 0;
+
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 10px;
-      margin-top: 16px;
-    }
+      justify-content: space-between;
+      gap: 12px;
 
-    .pieza-formulario {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
+      padding: 12px 16px;
 
-    .pieza-formulario select,
-    .pieza-formulario textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 11px 12px;
-      border: 1px solid var(--color-borde);
-      border-radius: var(--radio-sm);
       background: var(--color-superficie);
-      color: var(--color-texto);
-      font: inherit;
+      border-top: 1px solid var(--color-borde);
+      box-shadow: 0 -6px 20px rgba(0,0,0,.18);
     }
 
-    .pieza-formulario textarea {
-      min-height: 75px;
-      resize: vertical;
-    }
-
-    .pieza-fecha {
+    .barra-pendientes__texto {
       font-size: var(--t-sm);
-      color: var(--color-texto-suave);
-      margin-top: 8px;
+      font-weight: 700;
     }
 
-    .pieza-mensaje {
-      font-size: var(--t-sm);
-      margin-top: 8px;
+    .barra-pendientes button {
+      min-width: 104px;
     }
   </style>
 </head>
 
 <body>
 
+  <!-- Aviso de conexión -->
   <div class="franja-offline" role="status">
     Sin conexión: se muestran los datos guardados
   </div>
 
+  <!-- Encabezado -->
   <header style="
     display:flex;
     align-items:center;
@@ -70,25 +65,42 @@
     padding:0 var(--e-4);
     border-bottom:1px solid var(--color-borde)
   ">
+
     <div style="display:flex;align-items:center;gap:var(--e-3)">
+
       <span style="
-        width:32px;height:32px;flex:none;
+        width:32px;
+        height:32px;
+        flex:none;
         border-radius:var(--radio);
         background:var(--color-marca);
-        display:grid;place-items:center;color:white;font-weight:700
+        display:grid;
+        place-items:center;
+        color:white;
+        font-weight:700
       ">R</span>
 
       <div>
-        <p class="mb-0" style="font-weight:700">RIDER</p>
-        <p class="pequeno tenue mb-0">Técnico de campo</p>
+        <p class="mb-0" style="font-weight:700">
+          RIDER
+        </p>
+
+        <p class="pequeno tenue mb-0">
+          Técnico de campo
+        </p>
       </div>
+
     </div>
 
-    <a class="btn btn--fantasma" id="btn-salir" href="/login.html">
+    <a class="btn btn--fantasma"
+       id="btn-salir"
+       href="/login.html">
       Salir
     </a>
+
   </header>
 
+  <!-- Contenido principal -->
   <main style="padding:var(--e-2) var(--e-4) var(--e-6)">
 
     <p class="mb-0">
@@ -99,42 +111,68 @@
       </a>
     </p>
 
-    <h1 style="margin-bottom:var(--e-1)">Hoja de carga</h1>
-    <p class="pequeno tenue mb-3" id="subtitulo">&nbsp;</p>
+    <h1 style="margin-bottom:var(--e-1)">
+      Hoja de carga
+    </h1>
 
+    <p class="pequeno tenue mb-3" id="subtitulo">
+      &nbsp;
+    </p>
+
+    <!-- Aviso de datos locales -->
     <div class="aviso aviso--aviso mb-3 oculto"
          id="aviso-datos"
-         role="status"></div>
-
-    <div id="estado-cargando" aria-hidden="true">
-      <div class="esqueleto esqueleto--tarjeta"
-           style="margin-bottom:var(--e-3)"></div>
-      <div class="esqueleto esqueleto--tarjeta"
-           style="margin-bottom:var(--e-3)"></div>
-      <div class="esqueleto esqueleto--tarjeta"></div>
+         role="status">
     </div>
 
+    <!-- Estado de carga -->
+    <div id="estado-cargando" aria-hidden="true">
+
+      <div class="esqueleto esqueleto--tarjeta"
+           style="margin-bottom:var(--e-3)">
+      </div>
+
+      <div class="esqueleto esqueleto--tarjeta"
+           style="margin-bottom:var(--e-3)">
+      </div>
+
+      <div class="esqueleto esqueleto--tarjeta">
+      </div>
+
+    </div>
+
+    <!-- Estado de error -->
     <div class="estado-error oculto" id="estado-error">
+
       <p class="estado-error__titulo" id="error-titulo">
         No pudimos cargar la hoja de carga
       </p>
+
       <p class="estado-error__texto" id="error-texto">
         Revisa tu conexión e inténtalo de nuevo.
       </p>
-      <a class="btn btn--secundario" href="/tecnico-eventos.html">
+
+      <a class="btn btn--secundario"
+         href="/tecnico-eventos.html">
         Volver a Mis eventos
       </a>
+
     </div>
 
+    <!-- Estado vacío -->
     <div class="estado-vacio oculto" id="estado-vacio">
+
       <p class="estado-vacio__titulo">
         Este evento todavía no tiene equipo
       </p>
+
       <p class="estado-vacio__texto">
         Cuando el coordinador arme la hoja de carga, aparecerá aquí.
       </p>
+
     </div>
 
+    <!-- Lista de equipos -->
     <ul id="lista-piezas"
         class="oculto"
         style="
@@ -148,6 +186,27 @@
 
   </main>
 
+  <!-- Barra inferior de sincronización -->
+  <div class="barra-pendientes oculto"
+       id="barra-pendientes"
+       role="region"
+       aria-label="Sincronización de cambios">
+
+    <span class="barra-pendientes__texto"
+          id="cantidad-pendientes">
+      0 cambios pendientes de enviar
+    </span>
+
+    <button class="btn"
+            id="btn-enviar-pendientes"
+            type="button">
+      Enviar
+    </button>
+
+  </div>
+
+  <!-- JavaScript principal -->
   <script type="module" src="/tecnico-hoja-carga.js"></script>
+
 </body>
 </html>

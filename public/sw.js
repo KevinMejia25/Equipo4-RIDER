@@ -5,7 +5,7 @@
 // aplicación (el "app shell") para que se abran sin conexión, y deja que
 // el JavaScript de cada pantalla lea los DATOS desde IndexedDB.
 
-const VERSION = 'v1';
+const VERSION = 'v3';
 const CACHE = `rider-${VERSION}`;
 
 // Las pantallas que SIEMPRE tienen que abrir sin conexión. Si una de estas
