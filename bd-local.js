@@ -1,102 +1,266 @@
 
-// Copia local de los datos del técnico, en IndexedDB.
-// Tres "almacenes" (como tablas):
-//   eventos → un registro por evento     (clave: id)
-//   hojas   → la hoja de carga de cada evento: { evento_id, piezas: [...] }
-//   meta    → datos sueltos: de quién es la copia y cuándo se descargó
-
-
 const NOMBRE_BD = 'rider-tecnico';
-const VERSION_BD = 1;   // se sube solo si cambian los almacenes
+const VERSION_BD = 2;
 
-let conexion = null;    // se abre una sola vez y se reutiliza
+let conexionBD = null;
 
 function abrirBD() {
-  if (conexion) return conexion;
-  conexion = new Promise((resolver, rechazar) => {
-    const peticion = indexedDB.open(NOMBRE_BD, VERSION_BD);
+  if (conexionBD) return conexionBD;
 
-    // Solo corre la primera vez (o al subir VERSION_BD): crea los almacenes.
-    peticion.onupgradeneeded = () => {
-      const bd = peticion.result;
-      bd.createObjectStore('eventos', { keyPath: 'id' });
-      bd.createObjectStore('hojas', { keyPath: 'evento_id' });
-      bd.createObjectStore('meta', { keyPath: 'clave' });
+  conexionBD = new Promise((resolve, reject) => {
+    const solicitud = indexedDB.open(NOMBRE_BD, VERSION_BD);
+
+    solicitud.onupgradeneeded = () => {
+      const db = solicitud.result;
+
+      if (!db.objectStoreNames.contains('eventos')) {
+        db.createObjectStore('eventos', { keyPath: 'id' });
+      }
+
+      if (!db.objectStoreNames.contains('hojas')) {
+        db.createObjectStore('hojas', { keyPath: 'evento_id' });
+      }
+
+      if (!db.objectStoreNames.contains('meta')) {
+        db.createObjectStore('meta', { keyPath: 'clave' });
+      }
+
+      if (!db.objectStoreNames.contains('pendientes')) {
+        db.createObjectStore('pendientes', { keyPath: 'id' });
+      }
     };
-    peticion.onsuccess = () => resolver(peticion.result);
-    peticion.onerror = () => { conexion = null; rechazar(peticion.error); };
+
+    solicitud.onsuccess = () => {
+      const db = solicitud.result;
+
+      db.onversionchange = () => {
+        db.close();
+        conexionBD = null;
+      };
+
+      resolve(db);
+    };
+
+    solicitud.onerror = () => {
+      conexionBD = null;
+      reject(solicitud.error);
+    };
+
+    solicitud.onblocked = () => {
+      console.warn('La actualización de la base local está bloqueada por otra pestaña.');
+    };
   });
-  return conexion;
+
+  return conexionBD;
 }
 
-// Corre `operaciones(almacenes)` dentro de UNA transacción: o se guarda todo
-// o no se guarda nada (si se corta la luz a la mitad no queda una copia
-// a medias).
-async function enTransaccion(nombres, modo, operaciones) {
-  const bd = await abrirBD();
-  return new Promise((resolver, rechazar) => {
-    const tx = bd.transaction(nombres, modo);
-    const almacenes = Object.fromEntries(nombres.map((n) => [n, tx.objectStore(n)]));
+function transaccion(nombres, modo, ejecutar) {
+  return abrirBD().then((db) => new Promise((resolve, reject) => {
+    const tx = db.transaction(nombres, modo);
+
+    const stores = Object.fromEntries(
+      nombres.map((nombre) => [nombre, tx.objectStore(nombre)])
+    );
+
     let resultado;
+
     try {
-      resultado = operaciones(almacenes);
+      resultado = ejecutar(stores);
     } catch (error) {
       tx.abort();
-      rechazar(error);
+      reject(error);
       return;
     }
-    // Si la operación devolvió una petición (get, getAll), su resultado
-    // solo existe cuando la transacción termina.
-    tx.oncomplete = () => resolver(resultado && 'result' in resultado ? resultado.result : undefined);
-    tx.onerror = () => rechazar(tx.error);
-    tx.onabort = () => rechazar(tx.error);
-  });
+
+    tx.oncomplete = () => {
+      resolve(
+        resultado && typeof resultado === 'object' && 'result' in resultado
+          ? resultado.result
+          : resultado
+      );
+    };
+
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Transacción local cancelada.'));
+  }));
 }
 
-// ── Escritura ──
-
-// Reemplaza TODA la copia local por la que acaba de bajar de la red.
-// `dueno` es el id de la persona a la que pertenece la copia.
+// Guarda una copia de los eventos y sus hojas.
 export function guardarCopiaCompleta({ dueno, eventos, hojas }) {
-  return enTransaccion(['eventos', 'hojas', 'meta'], 'readwrite', (a) => {
-    a.eventos.clear();
-    a.hojas.clear();
-    eventos.forEach((e) => a.eventos.put(e));
-    hojas.forEach((h) => a.hojas.put(h));
-    a.meta.put({ clave: 'dueno', valor: dueno });
-    a.meta.put({ clave: 'descargada_en', valor: new Date().toISOString() });
-  });
+  return transaccion(
+    ['eventos', 'hojas', 'meta'],
+    'readwrite',
+    (a) => {
+      a.eventos.clear();
+      a.hojas.clear();
+
+      eventos.forEach((evento) => a.eventos.put(evento));
+      hojas.forEach((hoja) => a.hojas.put(hoja));
+
+      a.meta.put({ clave: 'dueno', valor: dueno });
+      a.meta.put({
+        clave: 'descargada_en',
+        valor: new Date().toISOString()
+      });
+
+      return true;
+    }
+  );
 }
 
-// Actualiza un solo evento y su hoja (cuando se abre la hoja de carga con red).
+// Guarda o actualiza una hoja individual.
 export function guardarEventoConHoja({ dueno, evento, hoja }) {
-  return enTransaccion(['eventos', 'hojas', 'meta'], 'readwrite', (a) => {
-    a.eventos.put(evento);
-    a.hojas.put(hoja);
-    a.meta.put({ clave: 'dueno', valor: dueno });
-  });
+  return transaccion(
+    ['eventos', 'hojas', 'meta'],
+    'readwrite',
+    (a) => {
+      a.eventos.put(evento);
+      a.hojas.put(hoja);
+
+      a.meta.put({ clave: 'dueno', valor: dueno });
+      a.meta.put({
+        clave: 'descargada_en',
+        valor: new Date().toISOString()
+      });
+
+      return true;
+    }
+  );
 }
 
-// Borra todo (cuando cierra sesión o entra otra persona).
 export function borrarTodo() {
-  return enTransaccion(['eventos', 'hojas', 'meta'], 'readwrite', (a) => {
-    a.eventos.clear();
-    a.hojas.clear();
-    a.meta.clear();
-  });
+  return transaccion(
+    ['eventos', 'hojas', 'meta', 'pendientes'],
+    'readwrite',
+    (a) => {
+      a.eventos.clear();
+      a.hojas.clear();
+      a.meta.clear();
+      a.pendientes.clear();
+      return true;
+    }
+  );
 }
-
-// ── Lectura ──
 
 function leer(almacen, operacion) {
-  return enTransaccion([almacen], 'readonly', (a) => operacion(a[almacen]));
+  return transaccion([almacen], 'readonly', (a) => operacion(a[almacen]));
 }
 
 export const leerEventos = () => leer('eventos', (a) => a.getAll());
-export const leerEvento  = (id) => leer('eventos', (a) => a.get(id));
-export const leerHoja    = (eventoId) => leer('hojas', (a) => a.get(eventoId));
+export const leerEvento = (id) => leer('eventos', (a) => a.get(id));
+export const leerHoja = (id) => leer('hojas', (a) => a.get(id));
+export const leerPendientes = () => leer('pendientes', (a) => a.getAll());
 
 export async function leerMeta(clave) {
   const fila = await leer('meta', (a) => a.get(clave));
   return fila?.valor ?? null;
+}
+
+export function contarPendientes() {
+  return leer('pendientes', (a) => a.count());
+}
+
+// Guarda la acción pendiente y actualiza la hoja local en la misma transacción.
+export function guardarPendiente(pendiente) {
+  return transaccion(
+    ['pendientes', 'hojas'],
+    'readwrite',
+    (a) => {
+      a.pendientes.put(pendiente);
+
+      const solicitud = a.hojas.get(pendiente.evento_id);
+
+      solicitud.onsuccess = () => {
+        const hoja = solicitud.result;
+        if (!hoja) return;
+
+        const pieza = hoja.piezas?.find(
+          (p) => p.id === pendiente.asignacion_id
+        );
+
+        if (!pieza) return;
+
+        if (pendiente.tipo === 'salida') {
+          pieza.salida_registrada = pendiente.fecha;
+        }
+
+        if (pendiente.tipo === 'retorno') {
+          pieza.retorno_registrado = pendiente.fecha;
+          pieza.condicion_retorno = pendiente.condicion_retorno;
+          pieza.nota = pendiente.nota || null;
+        }
+
+        pieza.pendiente_envio = true;
+        a.hojas.put(hoja);
+      };
+
+      return true;
+    }
+  );
+}
+
+export function eliminarPendiente(id) {
+  return transaccion(
+    ['pendientes'],
+    'readwrite',
+    (a) => a.pendientes.delete(id)
+  );
+}
+
+// Cuando se confirma el envío, se quita la marca de pendiente de la hoja.
+export function marcarPendienteSincronizado(pendiente) {
+  return transaccion(
+    ['hojas'],
+    'readwrite',
+    (a) => {
+      const solicitud = a.hojas.get(pendiente.evento_id);
+
+      solicitud.onsuccess = () => {
+        const hoja = solicitud.result;
+        if (!hoja) return;
+
+        const pieza = hoja.piezas?.find(
+          (p) => p.id === pendiente.asignacion_id
+        );
+
+        if (!pieza) return;
+
+        pieza.pendiente_envio = false;
+        a.hojas.put(hoja);
+      };
+
+      return true;
+    }
+  );
+}
+
+// Aplica los cambios pendientes sobre una hoja recién descargada.
+export async function aplicarPendientes(eventoId, piezas) {
+  const pendientes = await leerPendientes();
+
+  const copia = (piezas || []).map((pieza) => ({ ...pieza }));
+
+  for (const pendiente of pendientes) {
+    if (pendiente.evento_id !== eventoId) continue;
+
+    const pieza = copia.find(
+      (p) => p.id === pendiente.asignacion_id
+    );
+
+    if (!pieza) continue;
+
+    if (pendiente.tipo === 'salida') {
+      pieza.salida_registrada = pendiente.fecha;
+    }
+
+    if (pendiente.tipo === 'retorno') {
+      pieza.retorno_registrado = pendiente.fecha;
+      pieza.condicion_retorno = pendiente.condicion_retorno;
+      pieza.nota = pendiente.nota || null;
+    }
+
+    pieza.pendiente_envio = true;
+  }
+
+  return copia;
 }
