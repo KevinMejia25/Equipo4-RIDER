@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient.js';
 import * as bd from './bd-local.js';
 
@@ -186,8 +185,15 @@ export async function sincronizarPendientes() {
     };
   }
 
-  const pendientes = await bd.leerPendientes();
+  // IndexedDB devuelve los registros ordenados por su clave ("retorno:…" va
+  // antes que "salida:…"). Se ordenan por antigüedad, y en caso de empate la
+  // salida va primero, para que el retorno de una pieza no se rechace.
+  const pendientes = (await bd.leerPendientes()).sort((a, b) =>
+    (a.creado_en || '').localeCompare(b.creado_en || '') ||
+    (a.tipo === 'salida' ? -1 : 0) - (b.tipo === 'salida' ? -1 : 0)
+  );
   let enviados = 0;
+  const errores = [];
 
   for (const pendiente of pendientes) {
     try {
@@ -200,12 +206,18 @@ export async function sincronizarPendientes() {
         `No se pudo sincronizar ${pendiente.id}:`,
         error
       );
+      errores.push({
+        id: pendiente.id,
+        tipo: pendiente.tipo,
+        mensaje: error?.message || 'No se pudo enviar.'
+      });
     }
   }
 
   return {
     enviados,
-    pendientes: await bd.contarPendientes()
+    pendientes: await bd.contarPendientes(),
+    errores
   };
 }
 
