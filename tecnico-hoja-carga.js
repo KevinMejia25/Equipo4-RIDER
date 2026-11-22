@@ -246,6 +246,16 @@ function crearBoton(texto, clase, accion) {
     return boton;
 }
 
+// Motivo del último rechazo del servidor, para que el contador no quede
+// "atorado" sin explicación.
+let motivoRechazo = null;
+
+async function sincronizar() {
+    const resultado = await sincronizarPendientes();
+    motivoRechazo = resultado.errores?.[0]?.mensaje || null;
+    return resultado;
+}
+
 async function actualizarBarraPendientes() {
     const cantidad = await obtenerCantidadPendiente();
 
@@ -253,6 +263,10 @@ async function actualizarBarraPendientes() {
         cantidadPendientes.textContent = cantidad === 1
             ? '1 cambio pendiente de enviar'
             : `${cantidad} cambios pendientes de enviar`;
+
+        if (cantidad > 0 && motivoRechazo) {
+            cantidadPendientes.textContent += ` · No se pudo enviar: ${motivoRechazo}`;
+        }
     }
 
     if (barraPendientes) {
@@ -275,12 +289,14 @@ async function enviarCambiosPendientes() {
     btnEnviarPendientes.textContent = 'Enviando...';
 
     try {
-        const resultado = await sincronizarPendientes();
+        const resultado = await sincronizar();
         await actualizarBarraPendientes();
         await cargar();
 
         if (resultado.pendientes === 0) {
             notificar('Todos los cambios se sincronizaron correctamente.');
+        } else if (resultado.errores?.length) {
+            notificar(`Se enviaron ${resultado.enviados}. Quedan ${resultado.pendientes}: ${resultado.errores[0].mensaje}`, 'error');
         } else {
             notificar(`Se enviaron ${resultado.enviados} cambios. Quedan ${resultado.pendientes} pendientes.`);
         }
@@ -379,7 +395,7 @@ async function marcarSalida(pieza, tarjeta) {
             perfil
         });
 
-        if (navigator.onLine) await sincronizarPendientes();
+        if (navigator.onLine) await sincronizar();
 
         notificar(navigator.onLine
             ? 'Salida guardada correctamente.'
@@ -484,7 +500,7 @@ function mostrarFormularioRetorno(pieza) {
                 nota: nota.value.trim()
             });
 
-            if (navigator.onLine) await sincronizarPendientes();
+            if (navigator.onLine) await sincronizar();
 
             cerrar();
             notificar(navigator.onLine
@@ -561,7 +577,7 @@ async function cargar() {
 
 async function alVolverInternet() {
     try {
-        await sincronizarPendientes();
+        await sincronizar();
         await cargar();
     } catch (error) {
         console.error('Error al sincronizar al recuperar conexión:', error);
@@ -573,7 +589,7 @@ window.addEventListener('online', alVolverInternet);
 window.addEventListener('offline', () => actualizarBarraPendientes());
 
 try {
-    await sincronizarPendientes();
+    await sincronizar();
 } catch (error) {
     console.error('No se pudieron sincronizar los cambios pendientes:', error);
 }

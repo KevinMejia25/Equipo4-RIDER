@@ -1,4 +1,3 @@
-
 const NOMBRE_BD = 'rider-tecnico';
 const VERSION_BD = 2;
 
@@ -128,15 +127,24 @@ export function guardarEventoConHoja({ dueno, evento, hoja }) {
   );
 }
 
-export function borrarTodo() {
+// Con { conservarPendientes: true } (cerrar sesión) se vacía la copia local
+// pero se conservan los cambios sin enviar y el dueño de la copia, para que
+// no se pierdan y para que otro usuario no pueda enviarlos como suyos.
+export function borrarTodo({ conservarPendientes = false } = {}) {
   return transaccion(
     ['eventos', 'hojas', 'meta', 'pendientes'],
     'readwrite',
     (a) => {
       a.eventos.clear();
       a.hojas.clear();
-      a.meta.clear();
-      a.pendientes.clear();
+
+      if (conservarPendientes) {
+        a.meta.delete('descargada_en');
+      } else {
+        a.meta.clear();
+        a.pendientes.clear();
+      }
+
       return true;
     }
   );
