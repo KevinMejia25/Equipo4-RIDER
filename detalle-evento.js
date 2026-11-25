@@ -42,12 +42,13 @@ const ETIQUETA_POR_ESTADO = {
 // Botones que muestra el diseño de Figma en cada estado.
 // Los que traen `accion` ya están conectados (ver ACCIONES_CONECTADAS más abajo:
 // Confirmar es HU-08, Pasar a montaje es la tarea técnica, Cerrar es HU-12,
-// Cancelar es HU-13). Un botón sin `accion` se dibuja deshabilitado hasta que
+// Cancelar es HU-13; Editar abre el formulario de edición de esta misma pantalla).
+// Un botón sin `accion` se dibuja deshabilitado hasta que
 // le toque su historia.
 // Los estados finales (cerrado, cancelado) no tienen acciones.
 const ACCIONES_POR_ESTADO = {
-  cotizado:   [{ texto: 'Cancelar evento', clase: 'btn--peligro', accion: 'cancelar' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
-  confirmado: [{ texto: 'Cancelar evento', clase: 'btn--peligro', accion: 'cancelar' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
+  cotizado:   [{ texto: 'Editar evento', clase: 'btn--secundario', accion: 'editar' }, { texto: 'Cancelar evento', clase: 'btn--peligro', accion: 'cancelar' }, { texto: 'Confirmar evento', clase: '', accion: 'confirmar' }],
+  confirmado: [{ texto: 'Editar evento', clase: 'btn--secundario', accion: 'editar' }, { texto: 'Cancelar evento', clase: 'btn--peligro', accion: 'cancelar' }, { texto: 'Pasar a montaje', clase: '', accion: 'montaje' }],
   en_montaje: [{ texto: 'Cerrar evento', clase: '', accion: 'cerrar' }],
   cerrado:    [],
   cancelado:  [],
@@ -329,7 +330,10 @@ function pintarAcciones(estado, eventoId) {
     boton.className = `btn ${clase}`.trim();
     boton.textContent = texto;
 
-    if (ACCIONES_CONECTADAS[accion]) {
+    if (accion === 'editar') {
+      // Editar no cambia el estado: abre el formulario en esta misma pantalla.
+      boton.addEventListener('click', abrirEdicion);
+    } else if (ACCIONES_CONECTADAS[accion]) {
       boton.addEventListener('click', () => ejecutarAccion(boton, eventoId, accion));
     } else {
       boton.disabled = true; // todavía sin conectar (su historia es de otro sprint)
@@ -339,6 +343,8 @@ function pintarAcciones(estado, eventoId) {
 }
 
 function pintarEvento(evento) {
+  eventoActual = evento;
+  cerrarEdicion();   // al (re)pintar, la pantalla vuelve a modo lectura
   document.getElementById('evento-nombre').textContent = evento.nombre;
 
   const info = ETIQUETA_POR_ESTADO[evento.estado] ?? { clase: '', texto: evento.estado };
@@ -404,6 +410,244 @@ function pintarCuadrilla(filas) {
   document.getElementById('cuadrilla-tabla-contenedor').classList.toggle('oculto', filas.length === 0);
 }
 
+// ═══ Editar el evento, en esta misma pantalla ═══
+// El botón "Editar evento" cambia la tarjeta de datos por un formulario con los
+// mismos datos. Igual que confirmar, cerrar y cancelar, NO hace un UPDATE sobre
+// `eventos`: llama a la función editar_evento del servidor (editar_evento.sql),
+// que revisa las reglas (solo coordinador, solo cotizado o confirmado, campos y
+// fechas válidos y, si está confirmado y cambian las fechas, el traslape) y
+// guarda en una sola transacción. Las validaciones de aquí son para dar buena
+// experiencia; las que cuentan son las del servidor.
+let eventoActual = null;        // el evento tal como lo devolvió el servidor
+let originalEdicion = null;     // valores con los que se abrió el formulario
+let clientesCargados = false;
+
+const formEditar     = document.getElementById('form-editar-evento');
+const tarjetaDatos   = document.getElementById('tarjeta-datos');
+const selectCliente  = document.getElementById('edit-cliente_id');
+const btnGuardar     = document.getElementById('edit-guardar');
+const CAMPOS_FECHA   = ['fecha_montaje', 'fecha_inicio', 'fecha_fin'];
+
+// El servidor guarda cada fecha como un instante (con zona). El campo
+// datetime-local trabaja con la hora de pared de la persona, sin zona. Para
+// mostrar se convierte el instante a hora local, y para enviar se hace el
+// camino inverso con toISOString(); así abrir y guardar sin tocar las fechas
+// no las mueve de hora.
+const dos = (n) => String(n).padStart(2, '0');
+
+function paraInput(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}` +
+         `T${dos(d.getHours())}:${dos(d.getMinutes())}`;
+}
+
+// Si la persona no cambió la fecha, se manda la original tal cual (puede traer
+// segundos que el campo no muestra; recortarlos contaría como "cambio").
+function valorParaEnviar(campo, valorCampo) {
+  if (!valorCampo) return null;
+  if (originalEdicion && valorCampo === originalEdicion.campos[campo]) return originalEdicion.iso[campo];
+  return new Date(valorCampo).toISOString();
+}
+
+function limpiarErroresEdicion() {
+  formEditar.querySelectorAll('.campo').forEach((campo) => campo.classList.remove('campo--error'));
+  formEditar.querySelectorAll('.campo__error').forEach((span) => span.classList.add('oculto'));
+}
+
+function marcarErrorEdicion(nombreCampo) {
+  const input = document.getElementById(`edit-${nombreCampo}`);
+  if (!input) return;
+  const campo = input.closest('.campo');
+  campo.classList.add('campo--error');
+  campo.querySelector('.campo__error')?.classList.remove('oculto');
+}
+
+async function cargarClientes() {
+  if (clientesCargados) return true;
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('id, nombre')
+    .order('nombre', { ascending: true });
+  if (error) {
+    console.error('Error al cargar clientes:', error);
+    return false;
+  }
+  // textContent: el nombre del cliente lo escribe una persona.
+  selectCliente.replaceChildren(...(data ?? []).map((cliente) => {
+    const option = document.createElement('option');
+    option.value = cliente.id;
+    option.textContent = cliente.nombre;
+    return option;
+  }));
+  clientesCargados = true;
+  return true;
+}
+
+async function abrirEdicion() {
+  if (!eventoActual || !ESTADOS_EDITABLES.includes(eventoActual.estado)) return;
+  limpiarAviso();
+
+  if (!(await cargarClientes())) {
+    mostrarAviso('error', 'No se pudo abrir la edición.',
+      'No se pudo cargar la lista de clientes. Revisa tu conexión e inténtalo de nuevo.');
+    return;
+  }
+
+  const e = eventoActual;
+  document.getElementById('edit-nombre').value = e.nombre ?? '';
+  selectCliente.value = e.cliente_id ?? '';
+  document.getElementById('edit-sede').value = e.sede ?? '';
+  document.getElementById('edit-direccion').value = e.direccion ?? '';
+  document.getElementById('edit-notas').value = e.notas ?? '';
+
+  const campos = {};
+  const iso = {};
+  CAMPOS_FECHA.forEach((campo) => {
+    campos[campo] = paraInput(e[campo]);
+    iso[campo] = e[campo];
+    document.getElementById(`edit-${campo}`).value = campos[campo];
+  });
+  originalEdicion = { campos, iso };
+
+  // El aviso del traslape solo aplica a un evento confirmado.
+  document.getElementById('edit-nota-confirmado').classList.toggle('oculto', e.estado !== 'confirmado');
+
+  limpiarErroresEdicion();
+  btnGuardar.disabled = false;
+  btnGuardar.textContent = 'Guardar cambios';
+
+  // Mientras se edita: se esconden los datos y los botones de estado (no se
+  // puede confirmar o cancelar con cambios sin guardar).
+  tarjetaDatos.classList.add('oculto');
+  document.getElementById('acciones-estado').classList.add('oculto');
+  formEditar.classList.remove('oculto');
+  document.getElementById('edit-nombre').focus();
+}
+
+function cerrarEdicion() {
+  formEditar.classList.add('oculto');
+  tarjetaDatos.classList.remove('oculto');
+  document.getElementById('acciones-estado').classList.remove('oculto');
+  originalEdicion = null;
+}
+
+function validarEdicion(datos) {
+  limpiarErroresEdicion();
+  let esValido = true;
+
+  for (const campo of ['nombre', 'cliente_id', 'sede', ...CAMPOS_FECHA]) {
+    if (!String(datos[campo] ?? '').trim()) {
+      marcarErrorEdicion(campo);
+      esValido = false;
+    }
+  }
+
+  // Regla de la sección 10: montaje ≤ inicio ≤ fin, sin margen
+  if (datos.fecha_montaje && datos.fecha_inicio && datos.fecha_fin) {
+    const montaje = new Date(datos.fecha_montaje);
+    const inicio  = new Date(datos.fecha_inicio);
+    const fin     = new Date(datos.fecha_fin);
+    if (!(montaje <= inicio && inicio <= fin)) {
+      marcarErrorEdicion('fecha_fin');
+      esValido = false;
+    }
+  }
+  return esValido;
+}
+
+// Qué se le dice a la persona cuando el servidor responde ok: false.
+// Todo con textContent (vía mostrarAviso): nombres escritos por personas.
+async function mostrarRechazoEdicion(data) {
+  switch (data.codigo) {
+    case 'traslape':
+      mostrarAviso(
+        'error',
+        'No se guardó: hay equipo comprometido en fechas que se cruzan.',
+        'Cambia las fechas o quita estas piezas de la hoja de carga:',
+        (data.conflictos ?? []).map((c) =>
+          `${c.equipo_clave} · ${c.equipo_nombre} — ya está en «${c.evento_nombre}» ` +
+          `(${ETIQUETA_POR_ESTADO[c.evento_estado]?.texto ?? c.evento_estado}), ` +
+          `del ${formatearFecha(c.fecha_montaje)} al ${formatearFecha(c.fecha_fin)}`)
+      );
+      break;
+
+    case 'campos_requeridos':
+      (data.campos ?? []).forEach(marcarErrorEdicion);
+      mostrarAviso('error', 'No se guardó.', 'Faltan campos obligatorios.');
+      break;
+
+    case 'fechas_invalidas':
+      marcarErrorEdicion('fecha_fin');
+      mostrarAviso('error', 'No se guardó.', 'Las fechas deben ir en orden: montaje, inicio y fin.');
+      break;
+
+    case 'fecha_pasada':
+      mostrarAviso('error', 'No se guardó.', 'La fecha de montaje no puede estar en el pasado.');
+      break;
+
+    case 'cliente_no_existe':
+      marcarErrorEdicion('cliente_id');
+      mostrarAviso('error', 'No se guardó.', 'El cliente seleccionado ya no existe. Elige otro.');
+      break;
+
+    case 'estado_invalido':
+      // Alguien más cambió el estado mientras se editaba (lo canceló o lo pasó
+      // a montaje): se recarga para mostrar el estado real, ya sin edición.
+      await cargarDetalle();
+      mostrarAviso('error', 'No se pudo editar el evento.', data.mensaje ?? 'El evento ya no se puede editar.');
+      return;
+
+    default:
+      mostrarAviso('error', 'No se pudo guardar el evento.', data.mensaje ?? 'Inténtalo de nuevo.');
+  }
+}
+
+formEditar.addEventListener('submit', async (evento) => {
+  evento.preventDefault();
+  limpiarAviso();
+
+  const datos = Object.fromEntries(new FormData(formEditar).entries());
+  if (!validarEdicion(datos)) return;   // nada se envía si la validación falla
+
+  btnGuardar.disabled = true;
+  btnGuardar.textContent = 'Guardando…';
+
+  const { data, error } = await supabase.rpc('editar_evento', {
+    p_evento_id:     eventoActual.id,
+    p_nombre:        datos.nombre,
+    p_cliente_id:    datos.cliente_id,
+    p_sede:          datos.sede,
+    p_direccion:     datos.direccion || null,
+    p_fecha_montaje: valorParaEnviar('fecha_montaje', datos.fecha_montaje),
+    p_fecha_inicio:  valorParaEnviar('fecha_inicio', datos.fecha_inicio),
+    p_fecha_fin:     valorParaEnviar('fecha_fin', datos.fecha_fin),
+    p_notas:         datos.notas || null,
+  });
+
+  if (error) {
+    console.error('Error en editar_evento:', error);
+    mostrarAviso('error', 'No se pudo guardar el evento.', 'Revisa tu conexión e inténtalo de nuevo.');
+  } else if (data.ok) {
+    await cargarDetalle();   // redibuja con los datos nuevos y vuelve a modo lectura
+    mostrarAviso('exito', 'Evento actualizado.',
+      data.cambio_fechas && data.estado === 'confirmado'
+        ? 'Las nuevas fechas no chocan con otros eventos.'
+        : 'Los cambios quedaron guardados.');
+    return;
+  } else {
+    await mostrarRechazoEdicion(data);
+    if (formEditar.classList.contains('oculto')) return;   // se recargó la pantalla
+  }
+
+  btnGuardar.disabled = false;
+  btnGuardar.textContent = 'Guardar cambios';
+});
+
+document.getElementById('edit-cancelar').addEventListener('click', () => {
+  limpiarAviso();
+  cerrarEdicion();
+});
+
 async function cargarDetalle() {
   const eventoId = new URLSearchParams(window.location.search).get('id');
   if (!eventoId) {
@@ -418,7 +662,7 @@ async function cargarDetalle() {
   const [resEvento, resEquipo, resCuadrilla] = await Promise.all([
     supabase
       .from('eventos')
-      .select('id, nombre, sede, fecha_montaje, fecha_inicio, fecha_fin, estado, motivo_cancelacion, clientes(nombre, contacto)')
+      .select('id, nombre, cliente_id, sede, direccion, notas, fecha_montaje, fecha_inicio, fecha_fin, estado, motivo_cancelacion, clientes(nombre, contacto)')
       .eq('id', eventoId)
       .maybeSingle(),
     supabase
@@ -449,4 +693,4 @@ async function cargarDetalle() {
   mostrarSoloEstado('con-datos');
 }
 
-cargarDetalle();
+cargarDetalle();  
