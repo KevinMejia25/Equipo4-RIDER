@@ -46,7 +46,7 @@
       </div>
 
       <!-- Franja de datos: una sola fila en escritorio, se acomoda en teléfono -->
-      <div class="tarjeta mb-5">
+      <div class="tarjeta mb-5" id="tarjeta-datos">
         <div class="fila" style="align-items:flex-start">
           <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Cliente</p><p class="mb-0" id="dato-cliente"></p></div>
           <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Sede</p><p class="mb-0" id="dato-sede"></p></div>
@@ -56,6 +56,71 @@
           <div style="flex:1 1 150px"><p class="pequeno tenue mb-0">Contacto</p><p class="mb-0" id="dato-contacto"></p></div>
         </div>
       </div>
+
+      <!-- Edición del evento (solo cotizado o confirmado). Ocupa el lugar de la tarjeta de
+           datos mientras se edita; lo abre y lo cierra detalle-evento.js. Guarda con la
+           función editar_evento del servidor. -->
+      <form class="tarjeta mb-5 oculto" id="form-editar-evento" novalidate aria-label="Editar evento">
+        <div class="formulario__fila">
+          <label class="campo">
+            <span class="campo__etiqueta">Nombre del evento <span class="requerido">*</span></span>
+            <input class="campo__control" type="text" name="nombre" id="edit-nombre" required>
+            <span class="campo__error oculto">Este campo es obligatorio.</span>
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">Cliente <span class="requerido">*</span></span>
+            <select class="campo__control" name="cliente_id" id="edit-cliente_id" required></select>
+            <span class="campo__error oculto">Selecciona un cliente.</span>
+          </label>
+        </div>
+
+        <div class="formulario__fila">
+          <label class="campo">
+            <span class="campo__etiqueta">Sede <span class="requerido">*</span></span>
+            <input class="campo__control" type="text" name="sede" id="edit-sede" required>
+            <span class="campo__error oculto">Este campo es obligatorio.</span>
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">Dirección</span>
+            <input class="campo__control" type="text" name="direccion" id="edit-direccion">
+          </label>
+        </div>
+
+        <div class="formulario__fila">
+          <label class="campo">
+            <span class="campo__etiqueta">Fecha y hora de montaje <span class="requerido">*</span></span>
+            <input class="campo__control" type="datetime-local" name="fecha_montaje" id="edit-fecha_montaje" required>
+            <span class="campo__error oculto">Este campo es obligatorio.</span>
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">Fecha y hora de inicio <span class="requerido">*</span></span>
+            <input class="campo__control" type="datetime-local" name="fecha_inicio" id="edit-fecha_inicio" required>
+            <span class="campo__error oculto">Este campo es obligatorio.</span>
+          </label>
+        </div>
+
+        <div class="formulario__fila">
+          <label class="campo">
+            <span class="campo__etiqueta">Fecha y hora de fin <span class="requerido">*</span></span>
+            <input class="campo__control" type="datetime-local" name="fecha_fin" id="edit-fecha_fin" required>
+            <span class="campo__error oculto">La fecha de fin es obligatoria y debe ser posterior al inicio.</span>
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">Notas</span>
+            <input class="campo__control" type="text" name="notas" id="edit-notas" placeholder="Opcional">
+          </label>
+        </div>
+
+        <p class="pequeno tenue" id="edit-nota-confirmado">
+          Este evento está confirmado: si cambias las fechas, se vuelve a revisar que su equipo
+          no choque con otro evento.
+        </p>
+
+        <div class="acciones" style="justify-content: flex-end">
+          <button type="button" class="btn btn--secundario" id="edit-cancelar">Cancelar</button>
+          <button type="submit" class="btn" id="edit-guardar">Guardar cambios</button>
+        </div>
+      </form>
 
       <!-- Resultado de una acción de estado (Confirmar, Pasar a montaje): éxito, o rechazo con el detalle.
            El tipo (aviso--exito / aviso--error) lo pone detalle-evento.js. -->
