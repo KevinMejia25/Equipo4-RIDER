@@ -637,3 +637,21 @@
     outline: none !important;
     box-shadow: none !important;
 }
+
+/* =========================================
+   RIDER - ENLACE VOLVER UNIFICADO
+========================================= */
+
+.reporte a.reporte__volver {
+    color: #6554ff !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    text-decoration: underline !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.reporte a.reporte__volver:hover {
+    color: #8175ff !important;
+}

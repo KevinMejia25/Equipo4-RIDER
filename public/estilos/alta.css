@@ -52,3 +52,155 @@
 .alta-indicador {
   background: #ba1b1b;
 }
+
+/* Enlace volver - mismo diseño que Eventos */
+a.alta-regresar {
+    color: #6554ff !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    text-decoration: underline !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+a.alta-regresar:hover {
+    color: #8175ff !important;
+}
+
+/* =====================================================
+   RIDER - AJUSTE DE TAMAÑOS DAR DE ALTA EQUIPO
+   Diseño equilibrado y legible
+===================================================== */
+
+/* CONTENEDOR */
+.alta-contenedor {
+    width: calc(100% - 64px) !important;
+    max-width: 1160px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-top: 24px !important;
+    padding-bottom: 32px !important;
+}
+
+/* TARJETA */
+.alta-card {
+    width: 100% !important;
+    padding: 26px !important;
+    border-radius: 14px !important;
+}
+
+/* ENCABEZADO */
+.alta-titulo {
+    font-size: 26px !important;
+    line-height: 1.3 !important;
+    font-weight: 700 !important;
+}
+
+.alta-descripcion {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+}
+
+/* BADGE */
+.alta-badge {
+    font-size: 11px !important;
+    padding: 7px 12px !important;
+}
+
+/* SECCIONES */
+.alta-seccion {
+    margin-top: 24px !important;
+    padding-top: 20px !important;
+}
+
+.alta-seccion__titulo {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    margin-bottom: 18px !important;
+}
+
+/* DISTRIBUCIÓN */
+.alta-grid {
+    column-gap: 18px !important;
+    row-gap: 22px !important;
+}
+
+/* ETIQUETAS */
+.alta-campo .campo__etiqueta {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+}
+
+/* CAMPOS */
+.alta-campo .campo__control {
+    min-height: 44px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+}
+
+/* AYUDAS Y ERRORES */
+.campo__ayuda,
+.campo__error {
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+}
+
+/* DISPONIBILIDAD */
+.alta-disponibilidad {
+    min-height: 44px !important;
+    font-size: 13px !important;
+}
+
+/* PIE */
+.alta-pie {
+    margin-top: 24px !important;
+    padding-top: 20px !important;
+}
+
+.alta-obligatorio {
+    font-size: 11px !important;
+}
+
+/* BOTONES */
+.alta-botones {
+    gap: 10px !important;
+}
+
+.alta-boton-cancelar,
+.alta-boton-guardar {
+    min-height: 44px !important;
+    padding: 0 20px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: 9px !important;
+}
+
+/* ENLACE VOLVER */
+a.alta-regresar {
+    color: #6554ff !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    text-decoration: underline !important;
+}
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+    .alta-contenedor {
+        width: calc(100% - 28px) !important;
+    }
+
+    .alta-card {
+        padding: 18px !important;
+    }
+
+    .alta-titulo {
+        font-size: 23px !important;
+    }
+
+    .alta-grid {
+        row-gap: 18px !important;
+    }
+}
+

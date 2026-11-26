@@ -62,6 +62,73 @@ function actualizarTexto(id, valor) {
   }
 }
 
+
+
+// =====================================================
+// CÁLCULO DE DÍAS COMPROMETIDOS
+// =====================================================
+
+// Convierte una fecha YYYY-MM-DD a un número de día,
+// evitando problemas por zonas horarias.
+function convertirFechaADias(fecha) {
+  if (!fecha) return null;
+
+  const fechaTexto = String(fecha).slice(0, 10);
+  const partes = fechaTexto.split('-').map(Number);
+
+  if (partes.length !== 3 || partes.some(Number.isNaN)) {
+    return null;
+  }
+
+  const [anio, mes, dia] = partes;
+  const fechaUTC = Date.UTC(anio, mes - 1, dia);
+
+  const comprobacion = new Date(fechaUTC);
+
+  if (
+    comprobacion.getUTCFullYear() !== anio ||
+    comprobacion.getUTCMonth() !== mes - 1 ||
+    comprobacion.getUTCDate() !== dia
+  ) {
+    return null;
+  }
+
+  return Math.floor(fechaUTC / 86400000);
+}
+
+// Cuenta los días incluyendo el día de montaje y el día final.
+function contarDiasComprometidos(fechaMontaje, fechaFin) {
+  const inicio = convertirFechaADias(fechaMontaje);
+  const fin = convertirFechaADias(fechaFin);
+
+  if (inicio === null || fin === null || fin < inicio) {
+    return 0;
+  }
+
+  return fin - inicio + 1;
+}
+
+// Obtiene el evento relacionado con una asignación.
+function obtenerEventoAsignacion(asignacion) {
+  const evento = asignacion.eventos;
+
+  return Array.isArray(evento) ? evento[0] : evento;
+}
+
+// Solo cuentan los eventos que realmente comprometieron equipo.
+function eventoValido(evento) {
+  if (!evento) return false;
+
+  const estado = normalizar(evento.estado);
+
+  return [
+    'confirmado',
+    'en montaje',
+    'en_montaje',
+    'cerrado'
+  ].includes(estado);
+}
+
 // =====================================================
 // CARGAR INFORMACIÓN DE SUPABASE
 // =====================================================
@@ -114,8 +181,21 @@ async function cargarReporte() {
     categorias = respuestaCategorias.data || [];
 
     const respuestaAsignaciones = await supabase
-      .from('evento_equipo')
-      .select('equipo_id');
+  .from('evento_equipo')
+  .select(`
+    equipo_id,
+    evento_id,
+    salida_registrada,
+    retorno_registrado,
+    condicion_retorno,
+    eventos (
+      id,
+      fecha_montaje,
+      fecha_inicio,
+      fecha_fin,
+      estado
+    )
+  `);
 
     if (respuestaAsignaciones.error) {
       console.error(
@@ -242,43 +322,205 @@ function obtenerResultadosFiltrados() {
 }
 
 // =====================================================
+// OBTENER PERIODO DEL REPORTE
+// =====================================================
+
+function obtenerPeriodoReporte() {
+  const fechaInicioFiltro =
+    $('reporte-fecha-inicio')?.value || '';
+
+  const fechaFinFiltro =
+    $('reporte-fecha-fin')?.value || '';
+
+  const fechasEventos = asignaciones
+    .map((asignacion) => obtenerEventoAsignacion(asignacion))
+    .filter(eventoValido)
+    .map((evento) => ({
+      inicio: convertirFechaADias(evento.fecha_montaje),
+      fin: convertirFechaADias(evento.fecha_fin)
+    }))
+    .filter(({ inicio, fin }) =>
+      inicio !== null &&
+      fin !== null &&
+      fin >= inicio
+    );
+
+  const inicioMinimo = fechasEventos.length
+    ? Math.min(...fechasEventos.map((fecha) => fecha.inicio))
+    : null;
+
+  const finMaximo = fechasEventos.length
+    ? Math.max(...fechasEventos.map((fecha) => fecha.fin))
+    : null;
+
+  const inicioSeleccionado = fechaInicioFiltro
+    ? convertirFechaADias(fechaInicioFiltro)
+    : inicioMinimo;
+
+  const finSeleccionado = fechaFinFiltro
+    ? convertirFechaADias(fechaFinFiltro)
+    : finMaximo;
+
+  if (
+    inicioSeleccionado === null ||
+    finSeleccionado === null ||
+    finSeleccionado < inicioSeleccionado
+  ) {
+    return null;
+  }
+
+  return {
+    inicio: inicioSeleccionado,
+    fin: finSeleccionado,
+    dias: finSeleccionado - inicioSeleccionado + 1
+  };
+}
+
+// =====================================================
+// OBTENER MÉTRICAS DE UTILIZACIÓN POR EQUIPO
+// =====================================================
+
+function obtenerMetricasEquipo(equipoId, periodo) {
+  const eventosContados = new Set();
+
+  let diasComprometidos = 0;
+  let equiposDanados = 0;
+  let equiposFaltantes = 0;
+  let equiposBuenEstado = 0;
+  let equiposPendientes = 0;
+
+  const registros = asignaciones.filter((asignacion) =>
+    String(asignacion.equipo_id) === String(equipoId)
+  );
+
+  registros.forEach((asignacion) => {
+    const evento = obtenerEventoAsignacion(asignacion);
+
+    // Excluir eventos cotizados y cancelados.
+    if (!eventoValido(evento)) return;
+
+    const inicioEvento = convertirFechaADias(evento.fecha_montaje);
+    const finEvento = convertirFechaADias(evento.fecha_fin);
+
+    if (
+      inicioEvento === null ||
+      finEvento === null ||
+      finEvento < inicioEvento
+    ) {
+      return;
+    }
+
+    // Calcular la intersección entre el evento y el periodo.
+    const inicio = Math.max(inicioEvento, periodo.inicio);
+    const fin = Math.min(finEvento, periodo.fin);
+
+    if (fin < inicio) return;
+
+    const eventoId = String(evento.id ?? asignacion.evento_id);
+
+    // Evitar contar dos veces el mismo evento para el equipo.
+    if (eventosContados.has(eventoId)) return;
+
+    eventosContados.add(eventoId);
+
+    // Contar días incluyendo montaje y finalización.
+    diasComprometidos += fin - inicio + 1;
+
+    // Las condiciones de retorno solo cuentan en eventos cerrados.
+    if (normalizar(evento.estado) !== 'cerrado') return;
+
+    const condicion = normalizar(asignacion.condicion_retorno);
+
+    // Identificar retornos cerrados sin condición registrada.
+    if (!condicion) {
+      equiposPendientes++;
+      return;
+    }
+
+    if (condicion === 'dañado' || condicion === 'danado') {
+      equiposDanados++;
+    }
+
+    if (condicion === 'faltante') {
+      equiposFaltantes++;
+    }
+
+    if (
+      condicion === 'buen_estado' ||
+      condicion === 'buen estado'
+    ) {
+      equiposBuenEstado++;
+    }
+  });
+
+  return {
+    eventos: eventosContados.size,
+    diasComprometidos,
+    danados: equiposDanados,
+    faltantes: equiposFaltantes,
+    buenos: equiposBuenEstado,
+    pendientes: equiposPendientes
+  };
+}
+
+// =====================================================
 // ACTUALIZAR RESUMEN
 // =====================================================
+
+
 
 function mostrarReporte() {
   const resultados = obtenerResultadosFiltrados();
   const total = resultados.length;
+  const periodo = obtenerPeriodoReporte();
 
-  const activos = resultados.filter(
-    (equipo) => estaActivo(equipo)
-  ).length;
+  let totalDiasComprometidos = 0;
+  let totalAsignaciones = 0;
+  let equiposSinUso = 0;
 
-  const equiposConAsignaciones = resultados.filter(
-    (equipo) => contarAsignaciones(equipo.id) > 0
-  ).length;
+  if (!errorAsignaciones && periodo) {
+    resultados.forEach((equipo) => {
+      const metricas = obtenerMetricasEquipo(equipo.id, periodo);
 
-  const equiposSinAsignaciones =
-    total - equiposConAsignaciones;
+      totalDiasComprometidos += metricas.diasComprometidos;
+      totalAsignaciones += metricas.eventos;
 
-  const tasaActivos = total > 0
-    ? (activos / total) * 100
+      if (metricas.eventos === 0) {
+        equiposSinUso++;
+      }
+    });
+  }
+
+  const capacidadTotal = periodo
+    ? periodo.dias * total
     : 0;
+
+  const tasaUtilizacion =
+    !errorAsignaciones && capacidadTotal > 0
+      ? (totalDiasComprometidos / capacidadTotal) * 100
+      : 0;
 
   actualizarTexto('total-equipos', total);
 
-  // No se inventan horas de utilización.
-  actualizarTexto('total-horas', 'N/D');
+  actualizarTexto(
+    'total-horas',
+    errorAsignaciones || !periodo
+      ? 'N/D'
+      : totalAsignaciones
+  );
 
   actualizarTexto(
     'porcentaje-utilizacion',
-    `${tasaActivos.toFixed(1)}%`
+    errorAsignaciones || !periodo
+      ? 'N/D'
+      : `${tasaUtilizacion.toFixed(1)}%`
   );
 
   actualizarTexto(
     'equipos-mas-utilizados',
-    errorAsignaciones
+    errorAsignaciones || !periodo
       ? 'N/D'
-      : equiposSinAsignaciones
+      : equiposSinUso
   );
 
   actualizarTexto(
@@ -301,39 +543,79 @@ function dibujarTabla(resultados) {
   if (resultados.length === 0) {
     tabla.innerHTML = `
       <tr>
-        <td colspan="6" class="reporte__vacio">
+        <td colspan="8" class="reporte__vacio">
           No hay equipos que coincidan con los filtros.
         </td>
       </tr>
     `;
-
     return;
   }
 
-  const ordenados = [...resultados].sort(
-    (a, b) =>
-      contarAsignaciones(b.id) -
-      contarAsignaciones(a.id)
-  );
+  const periodo = obtenerPeriodoReporte();
+
+  const ordenados = [...resultados].sort((a, b) => {
+    if (errorAsignaciones || !periodo) return 0;
+
+    const metricasA = obtenerMetricasEquipo(a.id, periodo);
+    const metricasB = obtenerMetricasEquipo(b.id, periodo);
+
+    return metricasB.diasComprometidos -
+      metricasA.diasComprometidos;
+  });
 
   tabla.innerHTML = ordenados.map((equipo) => {
-    const activo = estaActivo(equipo);
+    const metricas = !errorAsignaciones && periodo
+      ? obtenerMetricasEquipo(equipo.id, periodo)
+      : null;
 
-    const cantidad = errorAsignaciones
-      ? null
-      : contarAsignaciones(equipo.id);
+    const eventos = metricas?.eventos ?? 'N/D';
+    const dias = metricas?.diasComprometidos ?? 'N/D';
 
-    const textoUso = cantidad === null
-      ? 'No disponible'
-      : cantidad > 0
-        ? 'Con asignaciones'
-        : 'Sin uso registrado';
+    const porcentaje = metricas && periodo.dias > 0
+      ? `${(
+          (metricas.diasComprometidos / periodo.dias) * 100
+        ).toFixed(1)}%`
+      : 'N/D';
 
-    const claseUso = cantidad === null
-      ? ''
-      : cantidad > 0
+    const uso = metricas
+      ? metricas.eventos > 0
+        ? 'Utilizado'
+        : 'Sin uso'
+      : 'No disponible';
+
+    const claseUso = metricas
+      ? metricas.eventos > 0
         ? 'reporte__estado--uso'
-        : 'reporte__estado--sin-uso';
+        : 'reporte__estado--sin-uso'
+      : '';
+
+    let condicionRetorno = 'Sin registro';
+
+    if (metricas) {
+      const condiciones = [];
+
+      if (metricas.danados > 0) {
+        condiciones.push(`Dañado: ${metricas.danados}`);
+      }
+
+      if (metricas.faltantes > 0) {
+        condiciones.push(`Faltante: ${metricas.faltantes}`);
+      }
+
+      if (metricas.buenos > 0) {
+        condiciones.push(`Buen estado: ${metricas.buenos}`);
+      }
+
+      if (metricas.pendientes > 0) {
+        condiciones.push(
+          `Pendiente de condición: ${metricas.pendientes}`
+        );
+      }
+
+      if (condiciones.length > 0) {
+        condicionRetorno = condiciones.join(' | ');
+      }
+    }
 
     return `
       <tr>
@@ -345,23 +627,19 @@ function dibujarTabla(resultados) {
 
         <td>${escapar(obtenerNombreCategoria(equipo))}</td>
 
-        <td>${cantidad === null ? 'N/D' : cantidad}</td>
+        <td>${eventos}</td>
+
+        <td>${dias}</td>
+
+        <td>${porcentaje}</td>
 
         <td>
           <span class="reporte__estado ${claseUso}">
-            ${textoUso}
+            ${uso}
           </span>
         </td>
 
-        <td>
-          <span class="reporte__estado ${
-            activo
-              ? 'reporte__estado--activo'
-              : 'reporte__estado--inactivo'
-          }">
-            ${activo ? 'Activo' : 'Inactivo'}
-          </span>
-        </td>
+        <td>${escapar(condicionRetorno)}</td>
       </tr>
     `;
   }).join('');
@@ -382,25 +660,63 @@ function exportarPDF() {
     return;
   }
 
-  const filas = resultados.map((equipo) => {
-    const cantidad = errorAsignaciones
-      ? 'N/D'
-      : contarAsignaciones(equipo.id);
+  const periodo = obtenerPeriodoReporte();
 
-    const uso = errorAsignaciones
-      ? 'No disponible'
-      : cantidad > 0
-        ? 'Con asignaciones'
-        : 'Sin asignaciones';
+  const filas = resultados.map((equipo) => {
+    let eventos = 'N/D';
+    let dias = 'N/D';
+    let utilizacion = 'N/D';
+    let uso = 'No disponible';
+    let condicionRetorno = 'N/D';
+
+    if (!errorAsignaciones && periodo) {
+      const metricas = obtenerMetricasEquipo(
+        equipo.id,
+        periodo
+      );
+
+      eventos = metricas.eventos;
+      dias = metricas.diasComprometidos;
+
+      const porcentaje = periodo.dias > 0
+        ? (metricas.diasComprometidos / periodo.dias) * 100
+        : 0;
+
+      utilizacion = `${porcentaje.toFixed(1)}%`;
+
+      uso = metricas.eventos > 0
+        ? 'Utilizado'
+        : 'Sin uso';
+
+      const condiciones = [];
+
+      if (metricas.buenos > 0) {
+        condiciones.push(`Buen estado: ${metricas.buenos}`);
+      }
+
+      if (metricas.danados > 0) {
+        condiciones.push(`Dañado: ${metricas.danados}`);
+      }
+
+      if (metricas.faltantes > 0) {
+        condiciones.push(`Faltante: ${metricas.faltantes}`);
+      }
+
+      condicionRetorno = condiciones.length > 0
+        ? condiciones.join(' | ')
+        : 'Sin registro';
+    }
 
     return `
       <tr>
         <td>${escapar(equipo.clave || '—')}</td>
         <td>${escapar(equipo.nombre || 'Sin nombre')}</td>
         <td>${escapar(obtenerNombreCategoria(equipo))}</td>
-        <td>${cantidad}</td>
+        <td>${eventos}</td>
+        <td>${dias}</td>
+        <td>${utilizacion}</td>
         <td>${escapar(uso)}</td>
-        <td>${estaActivo(equipo) ? 'Activo' : 'Inactivo'}</td>
+        <td>${escapar(condicionRetorno)}</td>
       </tr>
     `;
   }).join('');
@@ -477,7 +793,7 @@ function exportarPDF() {
         table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 11px;
+          font-size: 10px;
         }
 
         thead {
@@ -485,14 +801,14 @@ function exportarPDF() {
         }
 
         th {
-          padding: 11px 8px;
+          padding: 10px 7px;
           background: #161822;
           color: #ffffff;
           text-align: left;
         }
 
         td {
-          padding: 9px 8px;
+          padding: 9px 7px;
           border-bottom: 1px solid #e2e8f0;
           text-align: left;
           overflow-wrap: anywhere;
@@ -547,9 +863,11 @@ function exportarPDF() {
             <th>Clave</th>
             <th>Equipo</th>
             <th>Categoría</th>
-            <th>Asignaciones</th>
-            <th>Utilización</th>
-            <th>Estado</th>
+            <th>Eventos</th>
+            <th>Días comprometidos</th>
+            <th>Utilización del periodo</th>
+            <th>Uso</th>
+            <th>Condición de retorno</th>
           </tr>
         </thead>
 
@@ -576,6 +894,7 @@ function exportarPDF() {
   ventana.document.close();
 }
 
+
 // =====================================================
 // EVENTOS DE LOS CONTROLES
 // =====================================================
@@ -597,7 +916,7 @@ $('btn-filtrar')?.addEventListener('click', () => {
   if (fechaInicio || fechaFin) {
     actualizarTexto(
       'mensaje-reporte',
-      'Se aplicaron los filtros de equipo, categoría y estado. El filtro por fechas requiere vincular las columnas de fecha de Supabase.'
+      'Filtros de equipo, categoría, estado y periodo aplicados correctamente.'
     );
   } else {
     actualizarTexto(
