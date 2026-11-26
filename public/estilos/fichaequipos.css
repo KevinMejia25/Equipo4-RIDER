@@ -919,3 +919,25 @@ body.vista-asignaciones .calendario__titulo {
     display: none !important;
 }
 
+/* =========================================
+   ENLACE VOLVER - ESTILO UNIFICADO RIDER
+========================================= */
+
+a.ficha-volver {
+    color: #6554ff !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    text-decoration: underline !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+a.ficha-volver:hover {
+    color: #8175ff !important;
+}
+
+/* Ocultar únicamente el cubo, conservando su espacio */
+.equipo-icono span {
+    visibility: hidden !important;
+}

@@ -1217,3 +1217,163 @@
   }
 
 }
+
+
+/* =====================================================
+   CORRECCIÓN DE TAMAÑOS - INVENTARIO
+   ===================================================== */
+
+.inventario-contenedor {
+    width: min(1336px, calc(100% - 48px));
+    margin: 0 auto;
+}
+
+/* Encabezado */
+.inventario-encabezado h2 {
+    font-size: 26px;
+}
+
+.inventario-encabezado p {
+    font-size: 15px;
+}
+
+/* Tarjetas */
+.inventario-card {
+    min-height: 145px;
+    padding: 18px;
+}
+
+.inventario-card h3 {
+    font-size: 15px;
+}
+
+.inventario-card p {
+    font-size: 13px;
+}
+
+/* Filtros */
+.inventario-filtro__etiqueta {
+    font-size: 13px;
+}
+
+.inventario-filtro input,
+.inventario-filtro select {
+    min-height: 44px;
+    font-size: 14px;
+}
+
+/* Contadores */
+.inventario-resumen__contador {
+    font-size: 13px;
+}
+
+/* Tabla */
+.inventario-tabla .tabla th {
+    height: 48px;
+    font-size: 12px;
+}
+
+.inventario-tabla .tabla td {
+    height: 54px;
+    font-size: 13px;
+}
+
+
+/* =====================================================
+   TABLA DE INVENTARIO - ESTILO RIDER
+   Ajuste visual basado en la tabla de Eventos
+===================================================== */
+
+.inventario-contenedor .inventario-tabla {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #263344;
+    border-radius: 10px;
+    background: #151923;
+    box-shadow: none;
+}
+
+.inventario-contenedor .inventario-tabla .tabla-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.inventario-contenedor .inventario-tabla table.tabla {
+    width: 100%;
+    min-width: 1200px;
+    margin: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+/* ENCABEZADOS */
+.inventario-contenedor .inventario-tabla table.tabla th {
+    height: 54px;
+    box-sizing: border-box;
+    padding: 0 16px;
+    background: #211d4e;
+    color: #625bff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    border: none;
+    border-bottom: 1px solid #303044;
+}
+
+/* CONTENIDO */
+.inventario-contenedor .inventario-tabla table.tabla td {
+    height: 62px;
+    box-sizing: border-box;
+    padding: 0 16px;
+    color: #e2e8f0;
+    font-size: 16px;
+    line-height: 1.4;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    border: none;
+    border-bottom: 1px solid #263344;
+}
+
+/* FILAS ALTERNADAS */
+.inventario-contenedor .inventario-tabla table.tabla tbody tr:nth-child(odd) {
+    background: #151923;
+}
+
+.inventario-contenedor .inventario-tabla table.tabla tbody tr:nth-child(even) {
+    background: #101923;
+}
+
+/* HOVER */
+.inventario-contenedor .inventario-tabla table.tabla tbody tr:hover {
+    background: #1c2635;
+}
+
+/* CLAVE DEL EQUIPO */
+.inventario-contenedor .inventario-tabla table.tabla td:first-child {
+    color: #818cf8;
+    font-weight: 700;
+}
+
+/* CONDICIÓN */
+.inventario-contenedor .inventario-tabla table.tabla td:nth-child(7) {
+    color: #94a3b8;
+}
+
+/* ACCIONES */
+.inventario-contenedor .inventario-tabla table.tabla th:last-child,
+.inventario-contenedor .inventario-tabla table.tabla td.inventario-acciones {
+    text-align: center;
+}
+
+/* ÚLTIMA FILA */
+.inventario-contenedor .inventario-tabla table.tabla tbody tr:last-child td {
+    border-bottom: none;
+
+    
+}
+

@@ -1,4 +1,3 @@
-
 import { supabase } from './supabaseClient.js';
 
 /* =========================================================
@@ -27,7 +26,13 @@ const tituloCalendario = document.querySelector('.calendario__titulo');
 
 const parametros = new URLSearchParams(window.location.search);
 const equipoId = parametros.get('id');
+const origen = parametros.get('origen') || 'inventario';
+const botonVolver = document.getElementById('btn-volver-ficha');
 
+if (origen === 'disponibilidad' && botonVolver) {
+    botonVolver.href = 'ficha-equipo.html';
+    botonVolver.textContent = '← Volver a disponibilidad';
+}
 console.log('FICHA DE EQUIPO. ID recibido:', equipoId);
 
 // Identificar si se muestra una ficha individual o las asignaciones generales
@@ -395,7 +400,7 @@ function crearTarjetaEvento(evento, equipo = null) {
         const enlace = document.createElement('a');
         enlace.className = 'btn btn--pequeno btn--secundario';
         enlace.href =
-            `ficha-equipo.html?id=${encodeURIComponent(equipo.id)}`;
+    `ficha-equipo.html?id=${encodeURIComponent(equipo.id)}&origen=disponibilidad`;
         enlace.textContent = 'Ver ficha del equipo';
         tarjeta.appendChild(enlace);
     }
@@ -650,6 +655,9 @@ async function iniciar() {
     } catch (error) {
         mostrarError(error);
     }
+    
 }
 
 iniciar();
+
+
