@@ -126,6 +126,7 @@ export async function cerrarSesion() {
   // la sesión guardada en ESTE dispositivo.
   try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* idem */ }
   olvidarPerfil();
-  try { await borrarTodo(); } catch { /* aún no existía la base local */ }
+  // Los cambios que el técnico aún no envió se conservan al cerrar sesión.
+  try { await borrarTodo({ conservarPendientes: true }); } catch { /* aún no existía la base local */ }
   window.location.href = '/login.html';
 }
